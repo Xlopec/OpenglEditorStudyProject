@@ -1,15 +1,27 @@
 package com.epam.opengl.edu.model
 
 import android.net.Uri
+import kotlin.reflect.KClass
 
 sealed interface Message
 
+object OnEditorMenuToggled : Message
+
 @JvmInline
-value class OnEditModeChanged(
-    val isAppInEditMode: Boolean
+value class OnGrayscaleUpdated(
+    val value: Float,
 ) : Message
 
 @JvmInline
+value class OnSwitchedToEditTransformation(
+    val which: KClass<out Transformation>,
+) : Message
+
+object OnApplyChanges : Message
+
+object OnDiscardChanges : Message
+
+@JvmInline
 value class OnImageSelected(
-    val image: Uri
+    val image: Uri,
 ) : Message

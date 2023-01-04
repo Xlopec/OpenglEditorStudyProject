@@ -17,10 +17,13 @@ val DarkThemeColors = darkColors(
 )
 
 val LightThemeColors = lightColors(
-    primary = Color.White,
-    onPrimary = Color.Black,
-    onSecondary = Color.Black,
-    onBackground = Color.White,
+    primary = Color(0xFF283593),
+    primaryVariant = Color(0xFF5f5fc4),
+    secondary = Color(0xFF1565c0),
+    secondaryVariant = Color(0xFF5e92f3),
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onBackground = Color.Black,
     surface = Color.White,
     onSurface = Color.Black,
     error = Color(0xFFD00036),
