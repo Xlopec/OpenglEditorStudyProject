@@ -9,18 +9,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class App : Application() {
+class OpenGLDemoApp : Application() {
     val stateFlow = MutableStateFlow(AppState())
 }
 
 fun Activity.updateState(
-    message: Message
+    message: Message,
 ) {
     app.stateFlow.value = update(message, app.stateFlow.value)
 }
 
 inline val Activity.app
-    get() = application as App
+    get() = application as OpenGLDemoApp
 
 inline val Activity.appStateFlow: StateFlow<AppState>
     get() = app.stateFlow.asStateFlow()
