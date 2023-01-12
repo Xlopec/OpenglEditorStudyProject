@@ -1,5 +1,6 @@
 package com.epam.opengl.edu.model
 
+import androidx.compose.ui.graphics.Color
 import kotlin.reflect.KClass
 
 data class EditMenu(
@@ -34,6 +35,42 @@ fun EditMenu.updateGrayscale(
     state = EditTransformation(
         which = Grayscale::class,
         edited = current + value.toGrayscale(),
+    )
+)
+
+fun EditMenu.updateBrightness(
+    value: Float,
+) = copy(
+    state = EditTransformation(
+        which = Brightness::class,
+        edited = current + value.toBrightness(),
+    )
+)
+
+fun EditMenu.updateSaturation(
+    value: Float,
+) = copy(
+    state = EditTransformation(
+        which = Saturation::class,
+        edited = current + value.toSaturation(),
+    )
+)
+
+fun EditMenu.updateContrast(
+    value: Float,
+) = copy(
+    state = EditTransformation(
+        which = Contrast::class,
+        edited = current + value.toContrast(),
+    )
+)
+
+fun EditMenu.updateTint(
+    color: Color,
+) = copy(
+    state = EditTransformation(
+        which = Tint::class,
+        edited = current + Tint(color),
     )
 )
 
