@@ -1,6 +1,5 @@
 package com.epam.opengl.edu.model
 
-import androidx.compose.ui.graphics.Color
 import kotlin.reflect.KClass
 
 data class EditMenu(
@@ -66,11 +65,11 @@ fun EditMenu.updateContrast(
 )
 
 fun EditMenu.updateTint(
-    color: Color,
+    value: Float,
 ) = copy(
     state = EditTransformation(
         which = Tint::class,
-        edited = current + Tint(color),
+        edited = current + Tint(value),
     )
 )
 

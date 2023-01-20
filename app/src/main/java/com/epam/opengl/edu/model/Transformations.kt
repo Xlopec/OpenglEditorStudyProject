@@ -1,13 +1,11 @@
 package com.epam.opengl.edu.model
 
-import androidx.compose.ui.graphics.Color
-
 data class Transformations(
     val grayscale: Grayscale = Grayscale(0f),
     val brightness: Brightness = Brightness(0f),
     val saturation: Saturation = Saturation(0f),
     val contrast: Contrast = Contrast(0f),
-    val tint: Tint = Tint(Tint.InitialColor),
+    val tint: Tint = Tint(0f),
 )
 
 sealed interface Transformation
@@ -72,12 +70,8 @@ value class Contrast(
 
 @JvmInline
 value class Tint(
-    val color: Color,
-) : Transformation {
-    companion object {
-        val InitialColor = Color.White.copy(alpha = 0f)
-    }
-}
+    val value: Float,
+) : Transformation
 
 fun Float.toGrayscale() = Grayscale(this)
 

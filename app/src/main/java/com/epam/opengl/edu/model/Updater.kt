@@ -11,7 +11,7 @@ fun update(
         is OnBrightnessUpdated -> state.withEditMenu { updateBrightness(message.value) }
         is OnSaturationUpdated -> state.withEditMenu { updateSaturation(message.value) }
         is OnContrastUpdated -> state.withEditMenu { updateContrast(message.value) }
-        is OnTintUpdated -> state.withEditMenu { updateTint(message.color) }
+        is OnTintUpdated -> state.withEditMenu { updateTint(message.value) }
         is OnSwitchedToEditTransformation -> state.withEditMenu { switchToEditTransformationMode(message.which) }
         OnApplyChanges -> state.withEditMenu { applyEditedTransformation() }
         OnDiscardChanges -> state.withEditMenu { discardEditedTransformation() }

@@ -1,7 +1,6 @@
 package com.epam.opengl.edu.model
 
 import android.net.Uri
-import androidx.compose.ui.graphics.Color
 import kotlin.reflect.KClass
 
 sealed interface Message
@@ -30,7 +29,7 @@ value class OnContrastUpdated(
 
 @JvmInline
 value class OnTintUpdated(
-    val color: Color,
+    val value: Float,
 ) : Message
 
 @JvmInline
