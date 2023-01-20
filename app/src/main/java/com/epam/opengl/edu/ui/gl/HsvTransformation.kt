@@ -23,10 +23,10 @@ class HsvTransformation(
     fun render(
         brightness: Brightness,
         saturation: Saturation,
-        fbo: Int,
-        texture: Int,
+        targetFbo: Int,
+        sourceTexture: Int,
     ) {
-        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, fbo)
+        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, targetFbo)
         GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
         GLES31.glUseProgram(program)
         val positionHandle = GLES31.glGetAttribLocation(program, "aPosition")
@@ -35,7 +35,7 @@ class HsvTransformation(
         val saturationHandle = GLES31.glGetUniformLocation(program, "saturation")
         GLES31.glVertexAttribPointer(texturePositionHandle, 2, GLES31.GL_FLOAT, false, 0, textureCoordinates)
         GLES31.glEnableVertexAttribArray(texturePositionHandle)
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, sourceTexture)
         GLES31.glUniform1f(brightnessHandle, brightness.delta)
         GLES31.glUniform1f(saturationHandle, saturation.delta)
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
