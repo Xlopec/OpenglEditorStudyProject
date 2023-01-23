@@ -67,6 +67,7 @@ class AppGLRenderer(
     private val hsvTransformation = HsvTransformation(context, verticesBuffer, textureBuffer)
     private val contrastTransformation = ContrastTransformation(context, verticesBuffer, textureBuffer)
     private val tintTransformation = TintTransformation(context, verticesBuffer, textureBuffer)
+    private val gaussianBlurTransformation = GaussianBlurTransformation(context, verticesBuffer, textureBuffer)
 
     /**
      * Holds ids of textures:
@@ -75,7 +76,7 @@ class AppGLRenderer(
      * * textures[2] holds color attachment for ping-pong
      */
     private val textures = IntArray(3)
-    private val frameBuffers = IntArray(4)
+    private val frameBuffers = IntArray(5)
     private val projectionMatrix = FloatArray(16)
     private val vPMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
@@ -97,7 +98,8 @@ class AppGLRenderer(
         hsvTransformation.render(transformations.brightness, transformations.saturation, frameBuffers[1], textures[1])
         contrastTransformation.render(transformations.contrast, frameBuffers[2], textures[2])
         tintTransformation.render(transformations.tint, frameBuffers[3], textures[1])
-        matrixTransformation.render(vPMatrix, 0, textures[2])
+        gaussianBlurTransformation.render(transformations.blur, frameBuffers[4], textures[2])
+        matrixTransformation.render(vPMatrix, 0, textures[1])
     }
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
@@ -109,7 +111,7 @@ class AppGLRenderer(
         val ratio: Float = width.toFloat() / height.toFloat()
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
-        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 7f)
+        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, 1f, -1f, 3f, 7f)
 
         val bitmap = with(context) { image.asBitmap() }
 
