@@ -63,11 +63,13 @@ class AppGLRenderer(
     )
 
     private val matrixTransformation = MatrixTransformation(context, verticesBuffer, textureBuffer)
-    private val grayscaleProgram = GrayscaleTransformation(context, verticesBuffer, textureBuffer)
-    private val hsvTransformation = HsvTransformation(context, verticesBuffer, textureBuffer)
-    private val contrastTransformation = ContrastTransformation(context, verticesBuffer, textureBuffer)
-    private val tintTransformation = TintTransformation(context, verticesBuffer, textureBuffer)
-    private val gaussianBlurTransformation = GaussianBlurTransformation(context, verticesBuffer, textureBuffer)
+    private val colorTransformations = listOf(
+        GrayscaleTransformation(context, verticesBuffer, textureBuffer),
+        HsvTransformation(context, verticesBuffer, textureBuffer),
+        ContrastTransformation(context, verticesBuffer, textureBuffer),
+        TintTransformation(context, verticesBuffer, textureBuffer),
+        GaussianBlurTransformation(context, verticesBuffer, textureBuffer),
+    )
 
     /**
      * Holds ids of textures:
@@ -76,7 +78,7 @@ class AppGLRenderer(
      * * textures[2] holds color attachment for ping-pong
      */
     private val textures = IntArray(3)
-    private val frameBuffers = IntArray(5)
+    private val frameBuffers = IntArray(colorTransformations.size)
     private val projectionMatrix = FloatArray(16)
     private val vPMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
@@ -93,13 +95,16 @@ class AppGLRenderer(
         // original texture -> grayscale transformation -> texture[1];
         // texture[1] -> hsv transformation -> texture[2];
         // ....
-        // texture[2] -> matrix transformation -> screen
-        grayscaleProgram.render(transformations.grayscale, frameBuffers[0], textures[0])
-        hsvTransformation.render(transformations.brightness, transformations.saturation, frameBuffers[1], textures[1])
-        contrastTransformation.render(transformations.contrast, frameBuffers[2], textures[2])
-        tintTransformation.render(transformations.tint, frameBuffers[3], textures[1])
-        gaussianBlurTransformation.render(transformations.blur, frameBuffers[4], textures[2])
-        matrixTransformation.render(vPMatrix, 0, textures[1])
+        // texture[last modified texture + 1] -> matrix transformation -> screen
+        colorTransformations.fastForEachIndexed { index, transformation ->
+            transformation.draw(
+                transformations,
+                frameBuffers[index],
+                // fbo index -> txt index mapping: 0 -> 0; 1 -> 1; 2 -> 2; 3 -> 1; 4 -> 2...
+                textures[index.takeIf { it == 0 } ?: (1 + ((1 + index) % (textures.size - 1)))]
+            )
+        }
+        matrixTransformation.render(vPMatrix, 0, textures[(frameBuffers.size - 1) % (textures.size - 1) + 1])
     }
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
