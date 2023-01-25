@@ -7,6 +7,8 @@ sealed interface Message
 
 object OnEditorMenuToggled : Message
 
+object OnUndoTransformation : Message
+
 @JvmInline
 value class OnTransformationUpdated(
     val transformation: Transformation,

@@ -22,10 +22,23 @@ data class EditTransformation(
 val EditMenu.isDisplayed: Boolean
     get() = state !== Hidden
 
+val EditMenu.canUndoTransformations: Boolean
+    get() = previous.isNotEmpty()
+
 val EditMenu.displayTransformations: Transformations
     get() = when (state) {
         Displayed, Hidden -> current
         is EditTransformation -> state.edited
+    }
+
+fun EditMenu.undoLastTransformation() =
+    if (canUndoTransformations) {
+        copy(
+            current = previous.last(),
+            previous = previous.subList(0, previous.size - 1),
+        )
+    } else {
+        this
     }
 
 fun EditMenu.updateTransformation(
@@ -44,7 +57,9 @@ fun EditMenu.switchToEditTransformationMode(
 fun EditMenu.applyEditedTransformation() = when (state) {
     Displayed, Hidden -> this
     is EditTransformation -> copy(
-        state = Displayed, current = state.edited, previous = previous + state.edited
+        state = Displayed,
+        current = state.edited,
+        previous = previous + current
     )
 }
 
