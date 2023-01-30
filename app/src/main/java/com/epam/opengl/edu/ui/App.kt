@@ -1,6 +1,9 @@
 package com.epam.opengl.edu.ui
 
 import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.GetContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -29,7 +32,6 @@ private const val MaxDisplayUndoOperations = 10
 fun App(
     state: AppState,
     handler: MessageHandler,
-    onChooseImage: () -> Unit,
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -69,8 +71,14 @@ fun App(
             )
         },
         floatingActionButton = {
+            val chooserLauncher = rememberLauncherForActivityResult(GetContent()) { uri: Uri? ->
+                if (uri != null) {
+                    handler(OnImageSelected(uri))
+                }
+            }
+
             FloatingActionButton(
-                onClick = onChooseImage
+                onClick = { chooserLauncher.launch("image/*") }
             ) {
                 Icon(
                     imageVector = Icons.Filled.PermMedia,
@@ -135,7 +143,6 @@ fun AppPreview() {
         App(
             state = AppState(),
             handler = {},
-            onChooseImage = {}
         )
     }
 }
