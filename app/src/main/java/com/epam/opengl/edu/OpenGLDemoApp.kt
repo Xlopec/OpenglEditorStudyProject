@@ -2,25 +2,30 @@ package com.epam.opengl.edu
 
 import android.app.Activity
 import android.app.Application
-import com.epam.opengl.edu.model.AppState
-import com.epam.opengl.edu.model.Message
-import com.epam.opengl.edu.model.update
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.epam.opengl.edu.model.*
+import io.github.xlopec.tea.core.Component
+import io.github.xlopec.tea.core.Initializer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class OpenGLDemoApp : Application() {
-    val stateFlow = MutableStateFlow(AppState())
-}
+    val component: Component<Message, AppState, Command> by lazy {
+        val env = Environment(application = this)
 
-fun Activity.updateState(
-    message: Message,
-) {
-    app.stateFlow.value = update(message, app.stateFlow.value)
+        Component(
+            initializer = Initializer(AppState()),
+            resolver = { snapshot, context -> with(env) { resolve(snapshot, context) } },
+            updater = ::update,
+            scope = CoroutineScope(Job() + Dispatchers.Default.limitedParallelism(1)),
+        )
+    }
 }
 
 inline val Activity.app
     get() = application as OpenGLDemoApp
 
-inline val Activity.appStateFlow: StateFlow<AppState>
-    get() = app.stateFlow.asStateFlow()
+inline val Activity.component: Component<Message, AppState, Command>
+    get() = app.component
