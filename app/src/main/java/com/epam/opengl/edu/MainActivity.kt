@@ -13,6 +13,7 @@ import com.epam.opengl.edu.ui.theme.AppTheme
 import io.github.xlopec.tea.core.ExperimentalTeaApi
 import io.github.xlopec.tea.core.toStatesComponent
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
@@ -26,7 +27,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AppTheme {
-                val scope = rememberCoroutineScope()
+                val scope = rememberCoroutineScope { Dispatchers.Main.immediate }
                 val handler = remember { scope.messageHandler(messages) }
                 val statesFlow = remember { component.toStatesComponent()(messages) }
                 val state = statesFlow.collectAsState(null).value ?: return@AppTheme

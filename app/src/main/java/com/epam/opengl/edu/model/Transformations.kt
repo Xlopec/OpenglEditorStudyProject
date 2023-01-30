@@ -1,5 +1,7 @@
 package com.epam.opengl.edu.model
 
+import androidx.compose.ui.graphics.Color
+
 data class Transformations(
     val grayscale: Grayscale = Grayscale.Disabled,
     val brightness: Brightness = Brightness.Disabled,
@@ -7,6 +9,7 @@ data class Transformations(
     val contrast: Contrast = Contrast.Disabled,
     val tint: Tint = Tint.Disabled,
     val blur: GaussianBlur = GaussianBlur.Disabled,
+    val crop: Crop = Crop(),
 )
 
 sealed interface Transformation
@@ -100,6 +103,70 @@ data class GaussianBlur(
     }
 }
 
+enum class CropMode {
+    None, Preview, Crop
+}
+
+data class Crop(
+    val selection: CropSelection = CropSelection(Point(x = 0, y = 100), Point(x = 1080 / 2, y = 1000)),
+    val mode: CropMode = CropMode.None,
+    val borderWidth: Int = DefaultBorderWidth,
+    val borderColor: Color = Color.Red,
+) : Transformation {
+    companion object {
+        const val DefaultBorderWidth = 3
+    }
+}
+
+data class Point(val x: Int, val y: Int)
+
+data class CropSelection(
+    val topLeft: Point,
+    val bottomRight: Point,
+)
+
+inline val CropSelection.width: Int
+    get() = (bottomRight.x - topLeft.x).also { check(it >= 0) }
+
+inline val CropSelection.height: Int
+    get() = (bottomRight.y - topLeft.y).also { check(it >= 0) }
+
+fun CropSelection.moveBy(
+    deltaX: Int,
+    deltaY: Int,
+) = CropSelection(
+    topLeft = topLeft.moveBy(deltaX, deltaY),
+    bottomRight = bottomRight.moveBy(deltaX, deltaY)
+)
+
+fun CropSelection.moveTo(
+    x: Int,
+    y: Int,
+): CropSelection {
+    val newTopLeft = Point(x = x, y = y)
+    return CropSelection(
+        topLeft = newTopLeft,
+        bottomRight = newTopLeft.moveBy(width, height)
+    )
+}
+
+fun Crop.moveTo(
+    x: Int,
+    y: Int,
+) = copy(selection = selection.moveTo(x, y))
+
+fun Point.moveBy(
+    deltaX: Int,
+    deltaY: Int,
+) = Point(
+    x = x + deltaX,
+    y = y + deltaY
+)
+
+fun CropSelection.croppedWidth(
+    textureWidth: Int,
+): Int = textureWidth - topLeft.x - (textureWidth - bottomRight.x)
+
 operator fun Transformations.plus(
     transformation: Transformation,
 ): Transformations =
@@ -110,4 +177,5 @@ operator fun Transformations.plus(
         is Contrast -> copy(contrast = transformation)
         is Tint -> copy(tint = transformation)
         is GaussianBlur -> copy(blur = transformation)
+        is Crop -> copy(crop = transformation)
     }
