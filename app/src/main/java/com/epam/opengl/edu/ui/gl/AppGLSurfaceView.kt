@@ -1,4 +1,4 @@
-package com.epam.opengl.edu.ui
+package com.epam.opengl.edu.ui.gl
 
 import android.annotation.SuppressLint
 import android.content.Context
