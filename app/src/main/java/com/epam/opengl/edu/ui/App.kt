@@ -1,19 +1,18 @@
 package com.epam.opengl.edu.ui
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.net.Uri
 import android.opengl.GLSurfaceView
+import android.os.Environment
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.GetContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -25,6 +24,12 @@ import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.*
 import com.epam.opengl.edu.ui.gl.AppGLRenderer
 import com.epam.opengl.edu.ui.theme.AppTheme
+import io.github.xlopec.tea.core.Initial
+import io.github.xlopec.tea.core.Snapshot
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 typealias MessageHandler = (Message) -> Unit
 
@@ -32,11 +37,12 @@ private const val MaxDisplayUndoOperations = 10
 
 @Composable
 fun App(
-    state: AppState,
+    snapshot: Snapshot<Message, AppState, Command>,
     handler: MessageHandler,
 ) {
 
     val export = remember { mutableStateOf(0) }
+    val state = snapshot.currentState
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -137,12 +143,33 @@ fun App(
                         }
                     }
 
-                    val renderer = remember { AppGLRenderer(context, state.image, state.editMenu.current, glView, handler) }
+                    val renderer = remember { AppGLRenderer(context, state.image, state.editMenu, glView, handler) }
 
                     AndroidView({ glView.apply { setRenderer(renderer) } })
 
-                    LaunchedEffect(state.editMenu.displayTransformations) {
-                        renderer.transformations = state.editMenu.displayTransformations
+                    LaunchedEffect(state.editMenu) {
+                        renderer.state = state.editMenu
+                    }
+                    SideEffect {
+                        snapshot.commands.forEach { command ->
+                            when {
+                                command is TransformationApplied && command.which == Crop::class -> renderer.requestCrop()
+                            }
+                        }
+                    }
+                    LaunchedEffect(export.value) {
+                        val f = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "output.png")
+
+                        withContext(Dispatchers.IO) {
+                            FileOutputStream(f).use { fos ->
+                                val bitmap = renderer.bitmap()
+
+                                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+                                bitmap.recycle()
+                            }
+
+                            println("done")
+                        }
                     }
                 }
             }
@@ -160,8 +187,7 @@ private val EditMenu.undoBadgeText: String
 fun AppPreview() {
     AppTheme(darkTheme = false) {
         App(
-            state = AppState(),
-            handler = {},
-        )
+            snapshot = Initial(AppState()),
+        ) {}
     }
 }

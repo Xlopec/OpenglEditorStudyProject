@@ -101,6 +101,11 @@ private fun EditTransformationMenu(
             blur = state.edited.blur,
             handler = handler
         )
+
+        Crop::class -> EditCrop(
+            modifier = editMenuModifier,
+            handler = handler
+        )
     }
 }
 
@@ -154,6 +159,12 @@ private fun EditMenuDisplayed(
             image = Icons.Filled.BlurOn,
             text = stringResource(R.string.menu_item_blur),
             onClick = { handler(OnSwitchedToEditTransformation(GaussianBlur::class)) }
+        )
+
+        IconButton(
+            image = Icons.Filled.Crop,
+            text = stringResource(R.string.menu_item_crop),
+            onClick = { handler(OnSwitchedToEditTransformation(Crop::class)) }
         )
     }
 }
@@ -329,6 +340,22 @@ private fun EditBlur(
         )
         EditActions(
             title = stringResource(R.string.message_adjust_blur),
+            onDiscardChanges = { handler(OnDiscardChanges) },
+            onApplyChanges = { handler(OnApplyChanges) }
+        )
+    }
+}
+
+@Composable
+private fun EditCrop(
+    modifier: Modifier,
+    handler: MessageHandler,
+) {
+    Box(
+        modifier = modifier,
+    ) {
+        EditActions(
+            title = stringResource(R.string.message_adjust_crop),
             onDiscardChanges = { handler(OnDiscardChanges) },
             onApplyChanges = { handler(OnApplyChanges) }
         )

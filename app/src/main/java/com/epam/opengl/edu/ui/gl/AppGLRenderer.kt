@@ -22,13 +22,13 @@ import kotlin.math.roundToInt
 class AppGLRenderer(
     private val context: Context,
     image: Uri,
-    transformations: Transformations,
+    state: EditMenu,
     private val view: GLSurfaceView,
     private val handler: MessageHandler,
 ) : GLSurfaceView.Renderer, View.OnTouchListener {
 
     @Volatile
-    var transformations: Transformations = transformations
+    var state: EditMenu = state
         set(value) {
             if (value != field) {
                 view.queueEvent {
@@ -37,9 +37,6 @@ class AppGLRenderer(
                 }
             }
         }
-
-    private var bitmapW = 0
-    private var bitmapH = 0
 
     @Volatile
     var image: Uri = image
@@ -51,8 +48,6 @@ class AppGLRenderer(
                     val bitmap = with(context) { image.asBitmap() }
                     GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[0])
                     GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
-                    bitmapW = bitmap.width
-                    bitmapH = bitmap.height
                     bitmap.recycle()
                     touchHelper.reset()
                     view.requestRender()
@@ -115,25 +110,56 @@ class AppGLRenderer(
         view.renderMode = RENDERMODE_WHEN_DIRTY
     }
 
-    //private val topLeft = Point(x = 0, y = 100)
-    //private val bottomRight = Point(x = 1080 / 2, y = 1000)
-    //private val cropOrigin = CropSelection(topLeft, bottomRight)
+    fun requestCrop() {
+        val t = colorTransformations.first()
 
-    //@Volatile
-    //private var cropSelection = CropSelection(topLeft, bottomRight)
+        t.cropTextures = true
+        t.selectionMode = false
+        view.requestRender()
+    }
 
     override fun onDrawFrame(gl: GL10) = with(gl) {
         val t = colorTransformations.first()
 
+        t.selectionMode = state.displayCropSelection
         t.textureWidth = viewportWidth
         t.textureHeight = viewportHeight
-        t.cropSelection = transformations.crop.selection
 
         t.draw(
-            transformations,
+            state.displayTransformations,
             frameBuffers[0],
             textures[0]
         )
+
+        if (t.cropTextures) {
+            // CropSelection(Point(x = 0, y = 100), Point(x = 1080 / 2, y = 1000))
+            // viewport 1080 X 2054
+            val selection = state.displayTransformations.crop.selection
+            // upside down
+            val newOriginY = viewportHeight - selection.height + 5
+            val newSelection = selection.moveTo(5, newOriginY)
+                .copy(bottomRight = Point(x = selection.width - 5, y = viewportHeight - 5))
+
+
+            println("New selection $newSelection")
+
+            touchHelper.cropDx = 0f
+            touchHelper.cropDy = 0f
+            touchHelper.x1 = selection.topLeft.x.toFloat()
+            touchHelper.y1 = selection.topLeft.y.toFloat()
+
+            handler(
+                OnTransformationUpdated(
+                    state.displayTransformations.crop.copy(
+                        selection = newSelection
+                    )
+                )
+            )
+
+            view.requestRender()
+        }
+
+        t.cropTextures = false
         // we're using previous texture as target for next transformations, render pipeline looks like the following
         // original texture -> grayscale transformation -> texture[1];
         // texture[1] -> hsv transformation -> texture[2];
@@ -167,19 +193,15 @@ class AppGLRenderer(
         matrixTransformation.render(vPMatrix, 0, textures[1])
     }
 
-    fun getBitmap1(
-        onBitmap: (Bitmap) -> Unit,
-    ) {
-        view.queueEvent {
-            GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffers[0])
-            val croppedWidth = colorTransformations[0].cropSelection?.croppedWidth(viewportWidth) ?: viewportWidth
-            onBitmap(saveTextureToBitmap(croppedWidth, viewportHeight))
-        }
-    }
-
     suspend fun bitmap(): Bitmap = suspendCoroutine { continuation ->
         view.queueEvent {
-            continuation.resume(saveTextureToBitmap(viewportWidth, viewportHeight))
+            GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffers[0])
+            continuation.resume(
+                saveTextureToBitmap(
+                    state.displayTransformations.crop.selection.width,
+                    state.displayTransformations.crop.selection.height
+                )
+            )
         }
     }
 
@@ -196,11 +218,7 @@ class AppGLRenderer(
         GLES31.glGenTextures(2, textures, 0)
         GLES31.glGenFramebuffers(frameBuffers.size, frameBuffers, 0)
 
-        bitmapW = bitmap.width
-        bitmapH = bitmap.height
-
         println("viewport $width X $height")
-        println("bitmap $bitmapW X $bitmapH")
 
         // bind and load original texture
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[0])
@@ -242,10 +260,14 @@ class AppGLRenderer(
         v: View,
         event: MotionEvent,
     ): Boolean {
-        val crop = transformations.crop
+        val crop = state.displayTransformations.crop
+        val selectionMode = state.displayCropSelection
 
-        touchHelper.updateScene(event, crop.selection, viewportWidth, viewportHeight)
-        handler(OnTransformationUpdated(crop.moveTo(touchHelper.cropDx.roundToInt(), touchHelper.cropDy.roundToInt())))
+        touchHelper.updateScene(event, crop.selection, viewportWidth, viewportHeight, selectionMode)
+
+        if (selectionMode) {
+            handler(OnTransformationUpdated(crop.moveTo(touchHelper.cropDx.roundToInt(), touchHelper.cropDy.roundToInt())))
+        }
         view.requestRender()
         return true
     }

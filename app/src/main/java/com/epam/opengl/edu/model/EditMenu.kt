@@ -31,6 +31,9 @@ val EditMenu.displayTransformations: Transformations
         is EditTransformation -> state.edited
     }
 
+val EditMenu.displayCropSelection: Boolean
+    get() = state is EditTransformation && state.which == Crop::class
+
 fun EditMenu.undoLastTransformation() =
     if (canUndoTransformations) {
         copy(
@@ -43,12 +46,15 @@ fun EditMenu.undoLastTransformation() =
 
 fun EditMenu.updateTransformation(
     transformation: Transformation,
-) = copy(
-    state = EditTransformation(
-        which = transformation::class,
-        edited = current + transformation,
+) = when (state) {
+    Displayed, Hidden -> copy(current = current + transformation)
+    is EditTransformation -> copy(
+        state = EditTransformation(
+            which = transformation::class,
+            edited = current + transformation,
+        )
     )
-)
+}
 
 fun EditMenu.switchToEditTransformationMode(
     which: KClass<out Transformation>,

@@ -103,18 +103,13 @@ data class GaussianBlur(
     }
 }
 
-enum class CropMode {
-    None, Preview, Crop
-}
-
 data class Crop(
     val selection: CropSelection = CropSelection(Point(x = 0, y = 100), Point(x = 1080 / 2, y = 1000)),
-    val mode: CropMode = CropMode.None,
     val borderWidth: Int = DefaultBorderWidth,
     val borderColor: Color = Color.Red,
 ) : Transformation {
     companion object {
-        const val DefaultBorderWidth = 3
+        const val DefaultBorderWidth = 2
     }
 }
 
@@ -162,10 +157,6 @@ fun Point.moveBy(
     x = x + deltaX,
     y = y + deltaY
 )
-
-fun CropSelection.croppedWidth(
-    textureWidth: Int,
-): Int = textureWidth - topLeft.x - (textureWidth - bottomRight.x)
 
 operator fun Transformations.plus(
     transformation: Transformation,

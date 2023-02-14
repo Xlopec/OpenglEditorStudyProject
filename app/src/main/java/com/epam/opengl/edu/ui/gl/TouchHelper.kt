@@ -2,8 +2,6 @@ package com.epam.opengl.edu.ui.gl
 
 import android.view.MotionEvent
 import com.epam.opengl.edu.model.CropSelection
-import com.epam.opengl.edu.model.height
-import com.epam.opengl.edu.model.width
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -16,11 +14,11 @@ class TouchHelper {
 
     @Volatile
     var cropDx = 0f
-        private set
+        //private set
 
     @Volatile
     var cropDy = 0f
-        private set
+    //private set
 
     @Volatile
     var textureDx = 0f
@@ -33,6 +31,13 @@ class TouchHelper {
     private var previousX = 0f
     private var previousY = 0f
     private var oldSpan = Float.NaN
+
+    var x1 = 0f
+    var y1 = 0f
+
+    fun reset1() {
+
+    }
 
     fun reset() {
         /*_deltaX = 0f
@@ -48,6 +53,7 @@ class TouchHelper {
         cropSelection: CropSelection,
         viewportWidth: Int,
         viewportHeight: Int,
+        isCropSelectionMode: Boolean,
     ) {
         println(event)
         val aspectRatio = viewportWidth.toFloat() / viewportHeight.toFloat()
@@ -95,10 +101,10 @@ class TouchHelper {
             // handle movement path
             when (event.action) {
                 MotionEvent.ACTION_MOVE -> {
-                    if (cropSelection.contains(event, viewportWidth, viewportHeight)) {
+                    if (isCropSelectionMode && cropSelection.contains(event, viewportWidth, viewportHeight)) {
                         // check crop selection won't move outside texture bounds
-                        val newDx = (cropDx + delX * aspectRatio).coerceIn(0f, (viewportWidth - cropSelection.width).toFloat())
-                        val newDy = (cropDy + delY).coerceIn(0f, (viewportHeight - cropSelection.height).toFloat())
+                        val newDx = (cropDx + delX * aspectRatio)//.coerceIn(0f, (viewportWidth - cropSelection.width).toFloat())
+                        val newDy = (cropDy + delY)//.coerceIn(0f, (viewportHeight - cropSelection.height).toFloat())
 
                         cropDx = newDx
                         cropDy = newDy
@@ -128,7 +134,10 @@ class TouchHelper {
         val xOnTexture = ((viewportWidth / 2 - textureDx + event.x) / zoom) * ratio
         val yOnTexture = ((event.y - textureDy) / zoom)
 
-        return xOnTexture.roundToInt() in topLeft.x..bottomRight.x && yOnTexture.roundToInt() in topLeft.y..bottomRight.y
+        val cond = xOnTexture.roundToInt() in topLeft.x..bottomRight.x && yOnTexture.roundToInt() in topLeft.y..bottomRight.y
+        println("($xOnTexture, $yOnTexture) $this, $cond")
+
+        return cond
     }
 
 }
