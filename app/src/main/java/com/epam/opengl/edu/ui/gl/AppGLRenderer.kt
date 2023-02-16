@@ -118,12 +118,11 @@ class AppGLRenderer(
         view.requestRender()
     }
 
+    var displayTxtIdx = 1
     override fun onDrawFrame(gl: GL10) = with(gl) {
         val t = colorTransformations.first()
 
         t.selectionMode = state.displayCropSelection
-        t.textureWidth = viewportWidth
-        t.textureHeight = viewportHeight
         t.pointer = touchHelper.pointer
 
         t.draw(
@@ -138,15 +137,17 @@ class AppGLRenderer(
             val selection = state.displayTransformations.crop.selection
             // upside down
             val newOriginY = viewportHeight - selection.height + 5
-            val newSelection = selection.moveTo(5, newOriginY)
-                .copy(bottomRight = Point(x = selection.width - 5, y = viewportHeight - 5))
+            val newSelection = selection.moveTo(0, 0)
+            //.copy(bottomRight = Point(x = selection.width - 5, y = viewportHeight - 5))
 
+            t.textureWidth = selection.width
+            t.textureHeight = selection.height
 
             println("New selection $newSelection")
 
             touchHelper.cropDx = 0f
             touchHelper.cropDy = 0f
-
+            //displayTxtIdx = 0
             handler(
                 OnTransformationUpdated(
                     state.displayTransformations.crop.copy(
@@ -189,7 +190,8 @@ class AppGLRenderer(
         // Calculate the projection and view transformation
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        matrixTransformation.render(vPMatrix, 0, textures[1])
+        println("Render original ${textures[0] == textures[displayTxtIdx]}")
+        matrixTransformation.render(vPMatrix, 0, textures[displayTxtIdx])
     }
 
     suspend fun bitmap(): Bitmap = suspendCoroutine { continuation ->
@@ -241,7 +243,7 @@ class AppGLRenderer(
             val texture = textures[1 + (index % (textures.size - 1))]
             GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffers[index])
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-            GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGBA, width, height, 0, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_INT, null)
+            GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGBA, width, height, 0, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, null)
             GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR)
             GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_LINEAR)
             GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S, GLES31.GL_CLAMP_TO_EDGE)
@@ -252,6 +254,12 @@ class AppGLRenderer(
                 "non-complete buffer at index: $index"
             }
         }
+
+        val t = colorTransformations.first()
+        t.textureWidth = viewportWidth
+        t.textureHeight = viewportHeight
+        t.viewportWidth = viewportWidth.toFloat()
+        t.viewportHeight = viewportHeight.toFloat()
     }
 
     @SuppressLint("ClickableViewAccessibility")

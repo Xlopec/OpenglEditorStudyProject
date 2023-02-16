@@ -27,6 +27,8 @@ class CropTransformation(
     var cropTextures = false
     var selectionMode = false
     var pointer = PointF()
+    var viewportWidth = 0f
+    var viewportHeight = 0f
 
     context (GL)
     override fun draw(
@@ -52,7 +54,6 @@ class CropTransformation(
 
             for (i in AppGLRenderer.PingTextureIdx until textures.size) {
                 // resize all textures except for original one
-
                 GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[i])
                 GLES31.glTexImage2D(
                     GLES31.GL_TEXTURE_2D,
@@ -62,7 +63,7 @@ class CropTransformation(
                     cropRegion.height,
                     0,
                     GLES31.GL_RGBA,
-                    GLES31.GL_UNSIGNED_INT,
+                    GLES31.GL_UNSIGNED_BYTE,
                     null
                 )
             }
@@ -86,7 +87,13 @@ class CropTransformation(
         } else {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
         }
-        GLES31.glUniform2f(pointerHandle, pointer.x / textureWidth.toFloat(), pointer.y / textureHeight.toFloat())
+        // scaledPx range is [0f .. 1f]
+        // scaledPy range is [1f - textureHeight / viewportHeight .. 1f]
+        val scaledPx = (pointer.x * (textureWidth / viewportWidth)) / viewportWidth
+        val scaledPy = 1f - textureHeight / viewportHeight + (pointer.y * (textureHeight / viewportHeight)) / viewportHeight
+
+        println("px ${scaledPx} $scaledPy")
+        GLES31.glUniform2f(pointerHandle, scaledPx, scaledPy)
 
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
         GLES31.glEnableVertexAttribArray(positionHandle)

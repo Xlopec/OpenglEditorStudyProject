@@ -50,21 +50,19 @@ class TouchHelper {
         isCropSelectionMode: Boolean,
     ) {
         println(event)
-        val aspectRatio = viewportWidth.toFloat() / viewportHeight.toFloat()
         val delX = event.x - previousX
         val delY = event.y - previousY
-
         val zoom = (currentSpan + viewportWidth.toFloat()) / viewportWidth.toFloat()
 
         // texture dx is initially set to 0, when user moves texture to the left -
         // textureDx goes [-viewportWidth / 2, 0];
         // when user moves texture to the right - it goes [0, viewPortWidth / 2];
-        val xOnTexture = (((event.x - textureDx + viewportWidth.toFloat() / 2)) / 2) / zoom
-        val yOnTexture = (event.y - textureDy / 2) / zoom
+        val xOnTexture = (((event.x - textureDx + viewportWidth.toFloat() / 2)) / 2)
+        val yOnTexture = (event.y - textureDy / 2)
 
         pointer.set(xOnTexture, yOnTexture)
 
-        println("Pointer $pointer, ${event.x},${event.y} txt ${textureDy}")
+        println("Pointer $pointer, ${event.x},${event.y} txt (${textureDx}, ${textureDy}) zoom $zoom")
 
         previousX = event.x
         previousY = event.y

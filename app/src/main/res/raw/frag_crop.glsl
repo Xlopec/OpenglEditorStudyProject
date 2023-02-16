@@ -29,7 +29,7 @@ void main()
     if (inside(vTexPosition.x, pointer.x - borderWidth, pointer.x + borderWidth) && inside(vTexPosition.y, pointer.y - borderWidth, pointer.y + borderWidth))
     {
         outColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);
-    } else if (inside(vTexPosition.x, cropRegion.x, cropRegion.z) && inside(vTexPosition.y, cropRegion.y, cropRegion.w)/*horizontal(vTexPosition, cropRegion) || vertical(vTexPosition, cropRegion)*/) {
+    } else if (/*inside(vTexPosition.x, cropRegion.x, cropRegion.z) && inside(vTexPosition.y, cropRegion.y, cropRegion.w)*/horizontal(vTexPosition, cropRegion) || vertical(vTexPosition, cropRegion)) {
         outColor = cropRegionColor;
     } else {
         outColor = texture(uTexture, vTexPosition + offset);

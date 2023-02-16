@@ -104,7 +104,7 @@ data class GaussianBlur(
 }
 
 data class Crop(
-    val selection: CropSelection = CropSelection(Point(x = 0, y = 100), Point(x = 1080 / 2, y = 1000)),
+    val selection: CropSelection = CropSelection(Point(x = 0, y = 0), Point(x = 1080 / 3, y = 2054 / 3)),
     val borderWidth: Int = DefaultBorderWidth,
     val borderColor: Color = Color.Red,
 ) : Transformation {
