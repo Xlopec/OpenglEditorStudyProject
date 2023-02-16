@@ -1,6 +1,7 @@
 package com.epam.opengl.edu.ui.gl
 
 import android.content.Context
+import android.graphics.PointF
 import android.opengl.GLES31
 import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.Transformations
@@ -25,6 +26,7 @@ class CropTransformation(
     var textureHeight = 0
     var cropTextures = false
     var selectionMode = false
+    var pointer = PointF()
 
     context (GL)
     override fun draw(
@@ -38,6 +40,7 @@ class CropTransformation(
         GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
         GLES31.glUseProgram(program)
         val positionHandle = GLES31.glGetAttribLocation(program, "aPosition")
+        val pointerHandle = GLES31.glGetUniformLocation(program, "pointer")
         val texturePositionHandle = GLES31.glGetAttribLocation(program, "aTexPosition")
         val offsetHandle = GLES31.glGetUniformLocation(program, "offset")
         val cropRegionHandle = GLES31.glGetUniformLocation(program, "cropRegion")
@@ -83,6 +86,7 @@ class CropTransformation(
         } else {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
         }
+        GLES31.glUniform2f(pointerHandle, pointer.x / textureWidth.toFloat(), pointer.y / textureHeight.toFloat())
 
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
         GLES31.glEnableVertexAttribArray(positionHandle)

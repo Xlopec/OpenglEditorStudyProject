@@ -124,6 +124,7 @@ class AppGLRenderer(
         t.selectionMode = state.displayCropSelection
         t.textureWidth = viewportWidth
         t.textureHeight = viewportHeight
+        t.pointer = touchHelper.pointer
 
         t.draw(
             state.displayTransformations,
@@ -145,8 +146,6 @@ class AppGLRenderer(
 
             touchHelper.cropDx = 0f
             touchHelper.cropDy = 0f
-            touchHelper.x1 = selection.topLeft.x.toFloat()
-            touchHelper.y1 = selection.topLeft.y.toFloat()
 
             handler(
                 OnTransformationUpdated(
