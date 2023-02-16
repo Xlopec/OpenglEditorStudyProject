@@ -132,13 +132,9 @@ class AppGLRenderer(
         )
 
         if (t.cropTextures) {
-            // CropSelection(Point(x = 0, y = 100), Point(x = 1080 / 2, y = 1000))
-            // viewport 1080 X 2054
             val selection = state.displayTransformations.crop.selection
-            // upside down
-            val newOriginY = viewportHeight - selection.height + 5
             val newSelection = selection.moveTo(0, 0)
-            //.copy(bottomRight = Point(x = selection.width - 5, y = viewportHeight - 5))
+                .copy(bottomRight = Point(x = viewportWidth, y = viewportHeight))
 
             t.textureWidth = selection.width
             t.textureHeight = selection.height

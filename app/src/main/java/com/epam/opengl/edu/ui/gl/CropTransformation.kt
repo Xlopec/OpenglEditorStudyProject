@@ -79,18 +79,18 @@ class CropTransformation(
             GLES31.glUniform1f(borderWidthHandle, transformations.crop.borderWidth.toFloat() / textureWidth.toFloat())
             GLES31.glUniform4f(
                 cropRegionHandle,
-                cropRegion.topLeft.x.toFloat() / textureWidth.toFloat(),
-                cropRegion.topLeft.y.toFloat() / textureHeight.toFloat(),
-                cropRegion.bottomRight.x.toFloat() / textureWidth.toFloat(),
-                cropRegion.bottomRight.y.toFloat() / textureHeight.toFloat()
+                scaleX(cropRegion.topLeft.x.toFloat()),
+                scaleY(cropRegion.topLeft.y.toFloat()),
+                scaleX(cropRegion.bottomRight.x.toFloat()),
+                scaleY(cropRegion.bottomRight.y.toFloat())
             )
         } else {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
         }
         // scaledPx range is [0f .. 1f]
         // scaledPy range is [1f - textureHeight / viewportHeight .. 1f]
-        val scaledPx = (pointer.x * (textureWidth / viewportWidth)) / viewportWidth
-        val scaledPy = 1f - textureHeight / viewportHeight + (pointer.y * (textureHeight / viewportHeight)) / viewportHeight
+        val scaledPx = scaleX(pointer.x)
+        val scaledPy = scaleY(pointer.y)
 
         println("px ${scaledPx} $scaledPy")
         GLES31.glUniform2f(pointerHandle, scaledPx, scaledPy)
@@ -101,5 +101,9 @@ class CropTransformation(
         GLES31.glDisableVertexAttribArray(positionHandle)
         GLES31.glDisableVertexAttribArray(texturePositionHandle)
     }
+
+    private fun scaleX(x: Float) = x * (textureWidth / viewportWidth) / viewportWidth
+
+    private fun scaleY(y: Float) = 1f - textureHeight / viewportHeight + y * (textureHeight / viewportHeight) / viewportHeight
 
 }
