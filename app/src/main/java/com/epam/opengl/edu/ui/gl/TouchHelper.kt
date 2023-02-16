@@ -30,10 +30,16 @@ class TouchHelper {
     var textureDy = 0f
         private set
 
+    var textureWidth = 0f
+    var textureHeight = 0f
+
+    var viewportWidth = 0f
+    var viewportHeight = 0f
+
     private var previousX = Float.NaN
     private var previousY = 0f
     private var oldSpan = Float.NaN
-    val pointer = PointF(0f, 0f)
+    val pointer = PointF()
 
     fun reset() {
         currentSpan = 0f
@@ -54,13 +60,10 @@ class TouchHelper {
         val delY = event.y - previousY
         val zoom = (currentSpan + viewportWidth.toFloat()) / viewportWidth.toFloat()
 
-        // texture dx is initially set to 0, when user moves texture to the left -
-        // textureDx goes [-viewportWidth / 2, 0];
-        // when user moves texture to the right - it goes [0, viewPortWidth / 2];
-        val xOnTexture = (((event.x - textureDx + viewportWidth.toFloat() / 2)) / 2)
-        val yOnTexture = (event.y - textureDy / 2)
+        val xOnTexture = toTextureCoordinateX(event.x)
+        val yOnTexture = toTextureCoordinateY(event.y)
 
-        pointer.set(xOnTexture, yOnTexture)
+        pointer.set(scaledX(xOnTexture), scaledY(yOnTexture))
 
         println("Pointer $pointer, ${event.x},${event.y} txt (${textureDx}, ${textureDy}) zoom $zoom")
 
@@ -133,13 +136,28 @@ class TouchHelper {
         // texture dx is initially set to 0, when user moves texture to the left -
         // textureDx goes [-viewportWidth / 2, 0];
         // when user moves texture to the right - it goes [0, viewPortWidth / 2];
-        val xOnTexture = (((event.x - textureDx + viewportWidth.toFloat() / 2)) / 2) / zoom
-        val yOnTexture = (event.y - textureDy / 2) / zoom
+        val xOnTexture = toTextureCoordinateX(event.x)
+        val yOnTexture = toTextureCoordinateY(event.y)
 
         val cond = xOnTexture.roundToInt() in topLeft.x..bottomRight.x && yOnTexture.roundToInt() in topLeft.y..bottomRight.y
         println("($xOnTexture, $yOnTexture) $this, $textureDy $cond")
 
         return cond
     }
+
+    // texture dx is initially set to 0, when user moves texture to the left -
+    // textureDx goes [-viewportWidth / 2, 0];
+    // when user moves texture to the right - it goes [0, viewPortWidth / 2];
+    private fun toTextureCoordinateX(viewportX: Float) = (viewportX - textureDx + viewportWidth / 2) / 2
+
+    // textureDy [-textureDy..textureDy], so need to divide by 2 before
+    private fun toTextureCoordinateY(viewportY: Float) = viewportY - textureDy / 2
+
+    /** range is [0f .. 1f] */
+    private fun scaledX(xOnTexture: Float) = xOnTexture * (textureWidth / viewportWidth) / viewportWidth
+
+    /** range is [1f - textureHeight / viewportHeight .. 1f] */
+    private fun scaledY(yOnTexture: Float) =
+        1f - textureHeight / viewportHeight + yOnTexture * (textureHeight / viewportHeight) / viewportHeight
 
 }

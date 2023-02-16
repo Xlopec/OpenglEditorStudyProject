@@ -139,6 +139,9 @@ class AppGLRenderer(
             t.textureWidth = selection.width
             t.textureHeight = selection.height
 
+            touchHelper.textureWidth = selection.width.toFloat()
+            touchHelper.textureHeight = selection.height.toFloat()
+
             println("New selection $newSelection")
 
             touchHelper.cropDx = 0f
@@ -256,6 +259,12 @@ class AppGLRenderer(
         t.textureHeight = viewportHeight
         t.viewportWidth = viewportWidth.toFloat()
         t.viewportHeight = viewportHeight.toFloat()
+
+        touchHelper.viewportWidth = viewportWidth.toFloat()
+        touchHelper.viewportHeight = viewportHeight.toFloat()
+
+        touchHelper.textureWidth = viewportWidth.toFloat()
+        touchHelper.textureHeight = viewportHeight.toFloat()
     }
 
     @SuppressLint("ClickableViewAccessibility")
