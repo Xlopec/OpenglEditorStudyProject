@@ -110,20 +110,30 @@ class AppGLRenderer(
         view.renderMode = RENDERMODE_WHEN_DIRTY
     }
 
-    fun requestCrop() {
-        val t = colorTransformations.first()
+    private var cooldownMillis = 0L
 
+    fun requestCrop() {
+        // fixme invoked on each recomposition
+        val current = System.currentTimeMillis()
+
+        if (current - cooldownMillis < 1000) {
+            return
+        }
+
+        cooldownMillis = current
+        val t = colorTransformations.first()
         t.cropTextures = true
         t.selectionMode = false
         view.requestRender()
     }
 
-    var displayTxtIdx = 1
     override fun onDrawFrame(gl: GL10) = with(gl) {
         val t = colorTransformations.first()
 
         t.selectionMode = state.displayCropSelection
         t.pointer = touchHelper.pointer
+
+        val cropTextures = t.cropTextures
 
         t.draw(
             state.displayTransformations,
@@ -131,34 +141,23 @@ class AppGLRenderer(
             textures[0]
         )
 
-        if (t.cropTextures) {
+        var postUpdate: Crop? = null
+
+        if (cropTextures) {
             val selection = state.displayTransformations.crop.selection
             val newSelection = selection.moveTo(0, 0)
                 .copy(bottomRight = Point(x = viewportWidth, y = viewportHeight))
 
-            t.textureWidth = selection.width
-            t.textureHeight = selection.height
-
-            touchHelper.textureWidth = selection.width.toFloat()
-            touchHelper.textureHeight = selection.height.toFloat()
+            touchHelper.textureWidth = t.textureWidth.toFloat()
+            touchHelper.textureHeight = t.textureHeight.toFloat()
 
             println("New selection $newSelection")
 
             touchHelper.cropDx = 0f
             touchHelper.cropDy = 0f
-            //displayTxtIdx = 0
-            handler(
-                OnTransformationUpdated(
-                    state.displayTransformations.crop.copy(
-                        selection = newSelection
-                    )
-                )
-            )
 
-            view.requestRender()
+            postUpdate = state.displayTransformations.crop.copy(selection = newSelection)
         }
-
-        t.cropTextures = false
         // we're using previous texture as target for next transformations, render pipeline looks like the following
         // original texture -> grayscale transformation -> texture[1];
         // texture[1] -> hsv transformation -> texture[2];
@@ -188,9 +187,13 @@ class AppGLRenderer(
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1f, 0f)
         // Calculate the projection and view transformation
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
+        matrixTransformation.render(vPMatrix, 0, textures[1])
 
-        println("Render original ${textures[0] == textures[displayTxtIdx]}")
-        matrixTransformation.render(vPMatrix, 0, textures[displayTxtIdx])
+        if (postUpdate != null) {
+            handler(
+                OnTransformationUpdated(postUpdate)
+            )
+        }
     }
 
     suspend fun bitmap(): Bitmap = suspendCoroutine { continuation ->
@@ -278,7 +281,10 @@ class AppGLRenderer(
         touchHelper.updateScene(event, crop.selection, viewportWidth, viewportHeight, selectionMode)
 
         if (selectionMode) {
-            handler(OnTransformationUpdated(crop.moveTo(touchHelper.cropDx.roundToInt(), touchHelper.cropDy.roundToInt())))
+            val selection = crop.selection
+            val updSelection = selection.moveTo(touchHelper.cropRect.left.roundToInt(), touchHelper.cropRect.top.roundToInt())
+                .copy(bottomRight = Point(x = touchHelper.cropRect.right.roundToInt(), y = touchHelper.cropRect.bottom.roundToInt()))
+            handler(OnTransformationUpdated(crop.copy(selection = updSelection)))
         }
         view.requestRender()
         return true

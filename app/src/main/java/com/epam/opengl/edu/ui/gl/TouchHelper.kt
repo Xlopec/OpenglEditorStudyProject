@@ -1,6 +1,7 @@
 package com.epam.opengl.edu.ui.gl
 
 import android.graphics.PointF
+import android.graphics.RectF
 import android.view.MotionEvent
 import com.epam.opengl.edu.model.CropSelection
 import kotlin.math.abs
@@ -9,6 +10,10 @@ import kotlin.math.roundToInt
 
 
 class TouchHelper {
+
+    companion object {
+        const val ResizeTolerateWidth = 30f
+    }
 
     @Volatile
     var currentSpan = 0f
@@ -40,6 +45,7 @@ class TouchHelper {
     private var previousY = 0f
     private var oldSpan = Float.NaN
     val pointer = PointF()
+    val cropRect = RectF()
 
     fun reset() {
         currentSpan = 0f
@@ -66,6 +72,13 @@ class TouchHelper {
         pointer.set(scaledX(xOnTexture), scaledY(yOnTexture))
 
         println("Pointer $pointer, ${event.x},${event.y} txt (${textureDx}, ${textureDy}) zoom $zoom")
+
+        cropRect.set(
+            cropSelection.topLeft.x.toFloat(),
+            cropSelection.topLeft.y.toFloat(),
+            cropSelection.bottomRight.x.toFloat(),
+            cropSelection.bottomRight.y.toFloat()
+        )
 
         previousX = event.x
         previousY = event.y
@@ -108,16 +121,38 @@ class TouchHelper {
             // handle movement path
             when (event.action) {
                 MotionEvent.ACTION_MOVE -> {
-                    if (isCropSelectionMode && cropSelection.contains(event, viewportWidth)) {
-                        // check crop selection won't move outside texture bounds
-                        val newDx = (cropDx + delX / 2)//.coerceIn(0f, (viewportWidth - cropSelection.width).toFloat())
-                        val newDy = (cropDy + delY)//.coerceIn(0f, (viewportHeight - cropSelection.height).toFloat())
+                    when {
+                        isCropSelectionMode && abs(xOnTexture - cropRect.right) <= ResizeTolerateWidth -> {
+                            cropRect.right = xOnTexture
+                        }
 
-                        cropDx = newDx
-                        cropDy = newDy
-                    } else {
-                        textureDx += delX
-                        textureDy += delY
+                        isCropSelectionMode && abs(xOnTexture - cropRect.left) <= ResizeTolerateWidth -> {
+                            cropRect.left = xOnTexture
+                        }
+
+                        isCropSelectionMode && abs(yOnTexture - cropRect.top) <= ResizeTolerateWidth -> {
+                            cropRect.top = yOnTexture
+                        }
+
+                        isCropSelectionMode && abs(yOnTexture - cropRect.bottom) <= ResizeTolerateWidth -> {
+                            cropRect.bottom = yOnTexture
+                        }
+
+                        isCropSelectionMode && event in cropSelection -> {
+                            // check crop selection won't move outside texture bounds
+                            val newDx = (cropDx + delX / 2)//.coerceIn(0f, (viewportWidth - cropSelection.width).toFloat())
+                            val newDy = (cropDy + delY)//.coerceIn(0f, (viewportHeight - cropSelection.height).toFloat())
+
+                            cropDx = newDx
+                            cropDy = newDy
+
+                            cropRect.offsetTo(cropDx, cropDy)
+                        }
+
+                        else -> {
+                            textureDx += delX
+                            textureDy += delY
+                        }
                     }
                 }
 
@@ -128,21 +163,16 @@ class TouchHelper {
         }
     }
 
-    private fun CropSelection.contains(
+    private operator fun CropSelection.contains(
         event: MotionEvent,
-        viewportWidth: Int,
     ): Boolean {
-        val zoom = (currentSpan + viewportWidth.toFloat()) / viewportWidth.toFloat()
         // texture dx is initially set to 0, when user moves texture to the left -
         // textureDx goes [-viewportWidth / 2, 0];
         // when user moves texture to the right - it goes [0, viewPortWidth / 2];
         val xOnTexture = toTextureCoordinateX(event.x)
         val yOnTexture = toTextureCoordinateY(event.y)
 
-        val cond = xOnTexture.roundToInt() in topLeft.x..bottomRight.x && yOnTexture.roundToInt() in topLeft.y..bottomRight.y
-        println("($xOnTexture, $yOnTexture) $this, $textureDy $cond")
-
-        return cond
+        return xOnTexture.roundToInt() in topLeft.x..bottomRight.x && yOnTexture.roundToInt() in topLeft.y..bottomRight.y
     }
 
     // texture dx is initially set to 0, when user moves texture to the left -

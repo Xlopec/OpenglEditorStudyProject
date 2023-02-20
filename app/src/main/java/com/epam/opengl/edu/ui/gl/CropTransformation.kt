@@ -9,6 +9,7 @@ import com.epam.opengl.edu.model.height
 import com.epam.opengl.edu.model.width
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
+import kotlin.math.roundToInt
 
 class CropTransformation(
     private val context: Context,
@@ -29,6 +30,9 @@ class CropTransformation(
     var pointer = PointF()
     var viewportWidth = 0f
     var viewportHeight = 0f
+
+    private var cropOriginOffsetX = 0f
+    private var cropOriginOffsetY = 0f
 
     context (GL)
     override fun draw(
@@ -51,6 +55,12 @@ class CropTransformation(
         GLES31.glEnableVertexAttribArray(texturePositionHandle)
 
         if (cropTextures) {
+            cropTextures = false
+            // recalculates texture dimension. CroppedWidth = width * (selection.width / viewportWidth)
+            val croppedTextureWidth = (textureWidth * (cropRegion.width.toFloat() / viewportWidth)).roundToInt()
+            val croppedTextureHeight = (textureHeight * (cropRegion.height.toFloat() / viewportHeight)).roundToInt()
+
+            println("texture after crop $croppedTextureWidth,$croppedTextureHeight")
 
             for (i in AppGLRenderer.PingTextureIdx until textures.size) {
                 // resize all textures except for original one
@@ -59,8 +69,8 @@ class CropTransformation(
                     GLES31.GL_TEXTURE_2D,
                     0,
                     GLES31.GL_RGBA,
-                    cropRegion.width,
-                    cropRegion.height,
+                    croppedTextureWidth,
+                    croppedTextureHeight,
                     0,
                     GLES31.GL_RGBA,
                     GLES31.GL_UNSIGNED_BYTE,
@@ -70,10 +80,24 @@ class CropTransformation(
 
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
             // Coordinate origin is bottom left!
-            val normDeltaOffsetX = cropRegion.topLeft.x.toFloat() / textureWidth.toFloat()
-            val normDeltaOffsetY = -(textureHeight.toFloat() - cropRegion.bottomRight.y.toFloat()) / textureHeight.toFloat()
+            val normDeltaOffsetX = scaleX(cropRegion.topLeft.x.toFloat())
+            val normDeltaOffsetY =
+                -((viewportHeight - cropRegion.bottomRight.y.toFloat()) * textureHeight / viewportHeight) / viewportHeight
 
-            GLES31.glUniform2f(offsetHandle, normDeltaOffsetX, normDeltaOffsetY)
+            GLES31.glUniform2f(
+                offsetHandle,
+                // plus origin offset since we're working with original texture!
+                cropOriginOffsetX + normDeltaOffsetX,
+                cropOriginOffsetY + normDeltaOffsetY
+            )
+            // each time we crop texture we remove a texture part that is located to the left from cropRegion or viewportWidth - cropRegion.bottomRight.x.
+            // for x this part is going to be cropRegion.left.x, for y it'll be cropRegion.top.x or viewportHeight - cropRegion.bottomRight.y.
+            // we should accumulate this cropped deltas so that we can adjust crop origin.
+            // this must be done since we're working with original texture!
+            cropOriginOffsetX += normDeltaOffsetX
+            cropOriginOffsetY += normDeltaOffsetY
+            this.textureWidth = croppedTextureWidth
+            this.textureHeight = croppedTextureHeight
         } else if (selectionMode) {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
             GLES31.glUniform1f(borderWidthHandle, transformations.crop.borderWidth.toFloat() / textureWidth.toFloat())
@@ -88,9 +112,7 @@ class CropTransformation(
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
         }
 
-        println("pointer $pointer")
         GLES31.glUniform2f(pointerHandle, pointer.x, pointer.y)
-
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
         GLES31.glEnableVertexAttribArray(positionHandle)
         GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4)
@@ -102,6 +124,7 @@ class CropTransformation(
     private fun scaleX(x: Float) = x * (textureWidth / viewportWidth) / viewportWidth
 
     @Deprecated("remove")
-    private fun scaleY(y: Float) = 1f - textureHeight / viewportHeight + y * (textureHeight / viewportHeight) / viewportHeight
+    private fun scaleY(y: Float) =
+        1f - textureHeight / viewportHeight + y * (textureHeight / viewportHeight) / viewportHeight
 
 }
