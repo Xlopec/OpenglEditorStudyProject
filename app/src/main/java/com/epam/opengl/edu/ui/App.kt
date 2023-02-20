@@ -157,18 +157,20 @@ fun App(
                             }
                         }
                     }
-                    LaunchedEffect(export.value) {
-                        val f = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "output.png")
+                    if (export.value > 0) {
+                        LaunchedEffect(export.value) {
+                            val f = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "output.png")
 
-                        withContext(Dispatchers.IO) {
-                            FileOutputStream(f).use { fos ->
-                                val bitmap = renderer.bitmap()
+                            withContext(Dispatchers.IO) {
+                                FileOutputStream(f).use { fos ->
+                                    val bitmap = renderer.bitmap()
 
-                                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
-                                bitmap.recycle()
+                                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+                                    bitmap.recycle()
+                                }
+
+                                println("done")
                             }
-
-                            println("done")
                         }
                     }
                 }

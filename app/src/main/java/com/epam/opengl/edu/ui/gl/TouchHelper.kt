@@ -3,191 +3,218 @@ package com.epam.opengl.edu.ui.gl
 import android.graphics.PointF
 import android.graphics.RectF
 import android.view.MotionEvent
-import com.epam.opengl.edu.model.CropSelection
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
-
 class TouchHelper {
 
     companion object {
-        const val ResizeTolerateWidth = 30f
+        const val TolerancePx = 30f
+        const val MinSize = TolerancePx * 3
     }
 
-    @Volatile
-    var currentSpan = 0f
+    /**
+     * Texture offset in viewport coordinate system
+     */
+    var textureOffset = Offset()
         private set
 
-    @Volatile
-    var cropDx = 0f
-    //private set
-
-    @Volatile
-    var cropDy = 0f
-    //private set
-
-    @Volatile
-    var textureDx = 0f
+    /**
+     * Texture offset accumulated relative to the left side of crop rect.
+     * This is needed to account invisible offset accumulated after each crop because
+     * we need to calculate offset in coordinate system of the original texture
+     */
+    var cropOriginOffset = Offset()
         private set
 
-    @Volatile
-    var textureDy = 0f
-        private set
+    /**
+     * User input in texture coordinate system
+     */
+    val userInput = PointF()
 
-    var textureWidth = 0f
-    var textureHeight = 0f
-
-    var viewportWidth = 0f
-    var viewportHeight = 0f
-
-    private var previousX = Float.NaN
-    private var previousY = 0f
-    private var oldSpan = Float.NaN
-    val pointer = PointF()
+    /**
+     * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
+     */
     val cropRect = RectF()
+
+    /**
+     * Current texture size, can't exceed [viewport] size
+     */
+    var texture = Size(0, 0)
+        private set
+
+    /**
+     * Viewport size
+     */
+    var viewport = Size(0, 0)
+        private set
+
+    /**
+     * Texture size given current [cropRect] and [viewport]
+     */
+    val croppedTextureSize: Size
+        // new width = width * (selection.width / viewportWidth)
+        get() = Size(
+            (texture.width * (cropRect.width() / viewport.width)).roundToInt(),
+            (texture.height * (cropRect.height() / viewport.height)).roundToInt()
+        )
+    private var currentSpan = 0f
+    private val previousInput = PointF()
+    private var oldSpan = Float.NaN
+
+    val ratio: Float
+        get() = viewport.width.toFloat() / viewport.height
+
+    val zoom: Float
+        get() = (currentSpan + viewport.width) / viewport.width.toFloat()
+
+    private inline val consumedTextureOffset: Offset
+        get() = Offset(
+            x = cropRect.left * (texture.width.toFloat() / viewport.width),
+            y = -(viewport.height - cropRect.bottom) * (texture.height.toFloat() / viewport.height)
+        )
 
     fun reset() {
         currentSpan = 0f
         oldSpan = Float.NaN
-        previousX = 0f
-        previousY = 0f
+        previousInput.set(0f, 0f)
     }
 
-    fun updateScene(
+    fun resetCropSelection() {
+        cropRect.set(0f, 0f, viewport.width.toFloat(), viewport.height.toFloat())
+    }
+
+    fun onSurfaceChanged(
+        width: Int,
+        height: Int,
+    ) {
+        viewport = Size(width, height)
+        texture = viewport
+        cropOriginOffset = Offset(0f, 0f)
+        resetCropSelection()
+    }
+
+    fun onTouch(
         event: MotionEvent,
-        cropSelection: CropSelection,
-        viewportWidth: Int,
-        viewportHeight: Int,
         isCropSelectionMode: Boolean,
     ) {
         println(event)
-        val delX = event.x - previousX
-        val delY = event.y - previousY
-        val zoom = (currentSpan + viewportWidth.toFloat()) / viewportWidth.toFloat()
+        val offset = Offset(event.x - previousInput.x, event.y - previousInput.y)
 
-        val xOnTexture = toTextureCoordinateX(event.x)
-        val yOnTexture = toTextureCoordinateY(event.y)
-
-        pointer.set(scaledX(xOnTexture), scaledY(yOnTexture))
-
-        println("Pointer $pointer, ${event.x},${event.y} txt (${textureDx}, ${textureDy}) zoom $zoom")
-
-        cropRect.set(
-            cropSelection.topLeft.x.toFloat(),
-            cropSelection.topLeft.y.toFloat(),
-            cropSelection.bottomRight.x.toFloat(),
-            cropSelection.bottomRight.y.toFloat()
-        )
-
-        previousX = event.x
-        previousY = event.y
+        userInput.set(toTextureCoordinateX(event.x), toTextureCoordinateY(event.y))
+        previousInput.set(event.x, event.y)
 
         if (event.pointerCount > 1) {
-            // handle zooming path
-            var focalX = 0f
-            var focalY = 0f
-
-            for (i in 0 until event.pointerCount) {
-                focalX += event.getX(i)
-                focalY += event.getY(i)
-            }
-
-            focalX /= event.pointerCount
-            focalY /= event.pointerCount
-
-            var devSumX = 0f
-            var devSumY = 0f
-
-            for (i in 0 until event.pointerCount) {
-                devSumX += abs(focalX - event.getX(i))
-                devSumY += abs(focalY - event.getY(i))
-            }
-
-            devSumX /= event.pointerCount
-            devSumY /= event.pointerCount
-
-            val span = hypot(devSumX, devSumY)
-
-            if (oldSpan.isNaN()) {
-                oldSpan = span
-            }
-
-            if (event.action == MotionEvent.ACTION_MOVE) {
-                currentSpan += span - oldSpan
-                oldSpan = span
-            }
+            handleZoom(event)
         } else {
-            // handle movement path
-            when (event.action) {
-                MotionEvent.ACTION_MOVE -> {
-                    when {
-                        isCropSelectionMode && abs(xOnTexture - cropRect.right) <= ResizeTolerateWidth -> {
-                            cropRect.right = xOnTexture
-                        }
+            handleMovement(event, isCropSelectionMode, offset)
+        }
+    }
 
-                        isCropSelectionMode && abs(xOnTexture - cropRect.left) <= ResizeTolerateWidth -> {
-                            cropRect.left = xOnTexture
-                        }
+    private fun handleZoom(event: MotionEvent) {
+        var focalX = 0f
+        var focalY = 0f
 
-                        isCropSelectionMode && abs(yOnTexture - cropRect.top) <= ResizeTolerateWidth -> {
-                            cropRect.top = yOnTexture
-                        }
+        for (i in 0 until event.pointerCount) {
+            focalX += event.getX(i)
+            focalY += event.getY(i)
+        }
 
-                        isCropSelectionMode && abs(yOnTexture - cropRect.bottom) <= ResizeTolerateWidth -> {
-                            cropRect.bottom = yOnTexture
-                        }
+        focalX /= event.pointerCount
+        focalY /= event.pointerCount
 
-                        isCropSelectionMode && event in cropSelection -> {
-                            // check crop selection won't move outside texture bounds
-                            val newDx = (cropDx + delX / 2)//.coerceIn(0f, (viewportWidth - cropSelection.width).toFloat())
-                            val newDy = (cropDy + delY)//.coerceIn(0f, (viewportHeight - cropSelection.height).toFloat())
+        var devSumX = 0f
+        var devSumY = 0f
 
-                            cropDx = newDx
-                            cropDy = newDy
+        for (i in 0 until event.pointerCount) {
+            devSumX += abs(focalX - event.getX(i))
+            devSumY += abs(focalY - event.getY(i))
+        }
 
-                            cropRect.offsetTo(cropDx, cropDy)
-                        }
+        devSumX /= event.pointerCount
+        devSumY /= event.pointerCount
 
-                        else -> {
-                            textureDx += delX
-                            textureDy += delY
-                        }
+        val span = hypot(devSumX, devSumY)
+
+        if (oldSpan.isNaN()) {
+            oldSpan = span
+        }
+
+        if (event.action == MotionEvent.ACTION_MOVE) {
+            currentSpan += span - oldSpan
+            oldSpan = span
+        }
+    }
+
+    private fun handleMovement(
+        event: MotionEvent,
+        isCropSelectionMode: Boolean,
+        offset: Offset,
+    ) {
+        when (event.action) {
+            MotionEvent.ACTION_MOVE -> {
+                when {
+                    isCropSelectionMode && abs(userInput.x - cropRect.right) <= TolerancePx && userInput.y in cropRect.top..cropRect.bottom -> {
+                        cropRect.right = userInput.x.coerceAtLeast(cropRect.left + MinSize)
+                    }
+
+                    isCropSelectionMode && abs(userInput.x - cropRect.left) <= TolerancePx && userInput.y in cropRect.top..cropRect.bottom -> {
+                        cropRect.left = userInput.x.coerceAtMost(cropRect.right - MinSize)
+                    }
+
+                    isCropSelectionMode && abs(userInput.y - cropRect.top) <= TolerancePx && userInput.x in cropRect.left..cropRect.right -> {
+                        cropRect.top = userInput.y.coerceAtMost(cropRect.bottom - MinSize)
+                    }
+
+                    isCropSelectionMode && abs(userInput.y - cropRect.bottom) <= TolerancePx && userInput.x in cropRect.left..cropRect.right -> {
+                        cropRect.bottom = userInput.y.coerceAtLeast(cropRect.top + MinSize)
+                    }
+
+                    isCropSelectionMode && userInput in cropRect -> {
+                        // check crop selection won't exceed texture bounds
+                        cropRect.offsetTo(
+                            (cropRect.left + offset.x / 2).coerceIn(0f, viewport.width - cropRect.width()),
+                            (cropRect.top + offset.y).coerceIn(0f, viewport.height - cropRect.height())
+                        )
+                    }
+
+                    else -> {
+                        textureOffset += offset
                     }
                 }
+            }
 
-                MotionEvent.ACTION_UP -> {
-                    oldSpan = Float.NaN
-                }
+            MotionEvent.ACTION_UP -> {
+                oldSpan = Float.NaN
             }
         }
     }
 
-    private operator fun CropSelection.contains(
-        event: MotionEvent,
-    ): Boolean {
-        // texture dx is initially set to 0, when user moves texture to the left -
-        // textureDx goes [-viewportWidth / 2, 0];
-        // when user moves texture to the right - it goes [0, viewPortWidth / 2];
-        val xOnTexture = toTextureCoordinateX(event.x)
-        val yOnTexture = toTextureCoordinateY(event.y)
-
-        return xOnTexture.roundToInt() in topLeft.x..bottomRight.x && yOnTexture.roundToInt() in topLeft.y..bottomRight.y
+    fun onTexturesCropped() {
+        cropOriginOffset += consumedTextureOffset
+        texture = croppedTextureSize
+        resetCropSelection()
     }
+
+    /** range is [0f .. 1f] */
+    fun normalizedX(xOnTexture: Float) = xOnTexture * (texture.width.toFloat() / viewport.width) / viewport.width.toFloat()
+
+    /** range is [1f - textureHeight / viewportHeight .. 1f] */
+    fun normalizedY(yOnTexture: Float) =
+        1f - texture.height.toFloat() / viewport.height + yOnTexture * (texture.height.toFloat() / viewport.height) / viewport.height.toFloat()
+
+    @Suppress("NOTHING_TO_INLINE")
+    private inline operator fun RectF.contains(
+        point: PointF,
+    ) = point.x in left..right && point.y in top..bottom
 
     // texture dx is initially set to 0, when user moves texture to the left -
     // textureDx goes [-viewportWidth / 2, 0];
     // when user moves texture to the right - it goes [0, viewPortWidth / 2];
-    private fun toTextureCoordinateX(viewportX: Float) = (viewportX - textureDx + viewportWidth / 2) / 2
+    private fun toTextureCoordinateX(viewportX: Float) = (viewportX - textureOffset.x + viewport.width / 2) / 2
 
     // textureDy [-textureDy..textureDy], so need to divide by 2 before
-    private fun toTextureCoordinateY(viewportY: Float) = viewportY - textureDy / 2
-
-    /** range is [0f .. 1f] */
-    private fun scaledX(xOnTexture: Float) = xOnTexture * (textureWidth / viewportWidth) / viewportWidth
-
-    /** range is [1f - textureHeight / viewportHeight .. 1f] */
-    private fun scaledY(yOnTexture: Float) =
-        1f - textureHeight / viewportHeight + yOnTexture * (textureHeight / viewportHeight) / viewportHeight
+    private fun toTextureCoordinateY(viewportY: Float) = viewportY - textureOffset.y / 2
 
 }
