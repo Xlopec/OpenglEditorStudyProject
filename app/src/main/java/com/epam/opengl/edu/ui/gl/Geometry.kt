@@ -14,6 +14,10 @@ inline operator fun Offset.plus(
     other: Offset,
 ) = Offset(x + other.x, y + other.y)
 
+inline operator fun Offset.minus(
+    other: Offset,
+) = Offset(x - other.x, y - other.y)
+
 inline val Offset.x: Float
     get() = unpackFloat1(value)
 

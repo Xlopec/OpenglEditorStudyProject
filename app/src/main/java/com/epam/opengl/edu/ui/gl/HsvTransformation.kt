@@ -18,9 +18,6 @@ class HsvTransformation(
         context.loadProgram(R.raw.no_transform_vertex, R.raw.frag_hsv)
     }
 
-    var _bitmapW = 0
-    var _bitmapH = 0
-
     context (GL)
     override fun draw(
         transformations: Transformations,
@@ -37,21 +34,6 @@ class HsvTransformation(
         GLES31.glVertexAttribPointer(texturePositionHandle, 2, GLES31.GL_FLOAT, false, 0, textureCoordinates)
         GLES31.glEnableVertexAttribArray(texturePositionHandle)
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-
-        GLES31.glTexImage2D(
-            GLES31.GL_TEXTURE_2D,
-            0,
-            GLES31.GL_RGBA,
-            (_bitmapW - 100),
-            _bitmapH,
-            0,
-            GLES31.GL_RGBA,
-            GLES31.GL_UNSIGNED_INT,
-            null
-        )
-        //GLES31.glTexSubImage2D(GLES31.GL_TEXTURE_2D, 0, 100, 0, (_bitmapW - 100), _bitmapH, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_INT, null)
-
-
         GLES31.glUniform1f(brightnessHandle, transformations.brightness.delta)
         GLES31.glUniform1f(saturationHandle, transformations.saturation.delta)
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)

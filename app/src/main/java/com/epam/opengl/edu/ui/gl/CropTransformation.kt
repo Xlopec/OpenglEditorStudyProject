@@ -44,22 +44,19 @@ class CropTransformation(
         if (cropTextures) {
             cropTextures = false
             val croppedTextureSize = touchHelper.croppedTextureSize
-
-            for (i in AppGLRenderer.PingTextureIdx until textures.size) {
-                // resize all textures except for original one
-                GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[i])
-                GLES31.glTexImage2D(
-                    GLES31.GL_TEXTURE_2D,
-                    0,
-                    GLES31.GL_RGBA,
-                    croppedTextureSize.width,
-                    croppedTextureSize.height,
-                    0,
-                    GLES31.GL_RGBA,
-                    GLES31.GL_UNSIGNED_BYTE,
-                    null
-                )
-            }
+            // resize texture bound to this framebuffer
+            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[AppGLRenderer.CropTextureIdx])
+            GLES31.glTexImage2D(
+                GLES31.GL_TEXTURE_2D,
+                0,
+                GLES31.GL_RGBA,
+                croppedTextureSize.width,
+                croppedTextureSize.height,
+                0,
+                GLES31.GL_RGBA,
+                GLES31.GL_UNSIGNED_BYTE,
+                null
+            )
 
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
             // Coordinate origin is bottom left!

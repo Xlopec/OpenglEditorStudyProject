@@ -7,7 +7,9 @@ import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
-class TouchHelper(viewport: Size = Size(0, 0)) {
+class TouchHelper(
+    viewport: Size = Size(0, 0),
+) {
 
     companion object {
         const val TolerancePx = 30f
