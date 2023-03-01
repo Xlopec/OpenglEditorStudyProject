@@ -222,7 +222,8 @@ fun TouchHelper.normalizedY(
 private fun TouchHelper.toTextureCoordinateX(viewportX: Float): Float = (viewportX - textureOffset.x + viewport.width / 2) / 2
 
 // textureDy [-textureDy..textureDy], so need to divide by 2 before
-private fun TouchHelper.toTextureCoordinateY(viewportY: Float): Float = viewportY - textureOffset.y / 2
+private fun TouchHelper.toTextureCoordinateY(viewportY: Float): Float =
+    viewport.height - viewportY + textureOffset.y / 2
 
 @Suppress("NOTHING_TO_INLINE")
 private inline operator fun RectF.contains(
