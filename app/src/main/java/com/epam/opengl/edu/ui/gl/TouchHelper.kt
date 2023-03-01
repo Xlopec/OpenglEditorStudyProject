@@ -99,7 +99,6 @@ class TouchHelper {
         event: MotionEvent,
         isCropSelectionMode: Boolean,
     ) {
-        println(event)
         val offset = Offset(event.x - previousInput.x, event.y - previousInput.y)
 
         userInput.set(toTextureCoordinateX(event.x), toTextureCoordinateY(event.y))
