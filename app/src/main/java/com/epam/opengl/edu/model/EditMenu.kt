@@ -1,11 +1,13 @@
 package com.epam.opengl.edu.model
 
+import com.epam.opengl.edu.ui.gl.TouchHelper
 import kotlin.reflect.KClass
 
 data class EditMenu(
     val state: EditorState = Hidden,
     val current: Transformations = Transformations(),
     val previous: List<Transformations> = listOf(),
+    val helper: TouchHelper = TouchHelper(),
 )
 
 sealed interface EditorState

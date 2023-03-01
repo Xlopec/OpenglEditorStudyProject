@@ -1,9 +1,9 @@
 package com.epam.opengl.edu.model
 
 import android.net.Uri
-import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 
-@Immutable
+@Stable
 data class AppState(
     val editMenu: EditMenu = EditMenu(),
     val image: Uri? = null,

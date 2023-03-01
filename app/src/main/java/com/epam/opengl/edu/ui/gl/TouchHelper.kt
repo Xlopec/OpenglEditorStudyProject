@@ -7,7 +7,7 @@ import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
-class TouchHelper {
+class TouchHelper(viewport: Size = Size(0, 0)) {
 
     companion object {
         const val TolerancePx = 30f
@@ -36,55 +36,40 @@ class TouchHelper {
     /**
      * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
      */
-    val cropRect = RectF()
+    val cropRect = RectF(0f, 0f, viewport.width.toFloat(), viewport.height.toFloat())
 
     /**
      * Current texture size, can't exceed [viewport] size
      */
-    var texture = Size(0, 0)
+    var texture = viewport
         private set
 
     /**
      * Viewport size
      */
-    var viewport = Size(0, 0)
+    var viewport = viewport
         private set
 
-    /**
-     * Texture size given current [cropRect] and [viewport]
-     */
-    val croppedTextureSize: Size
-        // new width = width * (selection.width / viewportWidth)
-        get() = Size(
-            (texture.width * (cropRect.width() / viewport.width)).roundToInt(),
-            (texture.height * (cropRect.height() / viewport.height)).roundToInt()
-        )
     private var currentSpan = 0f
     private val previousInput = PointF()
     private var oldSpan = Float.NaN
 
-    val ratio: Float
-        get() = viewport.width.toFloat() / viewport.height
-
     val zoom: Float
         get() = (currentSpan + viewport.width) / viewport.width.toFloat()
 
-    private inline val consumedTextureOffset: Offset
-        get() = Offset(
-            x = cropRect.left * (texture.width.toFloat() / viewport.width),
-            y = -(viewport.height - cropRect.bottom) * (texture.height.toFloat() / viewport.height)
-        )
-
+    // todo recreate
     fun reset() {
         currentSpan = 0f
         oldSpan = Float.NaN
         previousInput.set(0f, 0f)
     }
 
+    // todo recreate
     fun resetCropSelection() {
         cropRect.set(0f, 0f, viewport.width.toFloat(), viewport.height.toFloat())
     }
 
+    // todo recreate
     fun onSurfaceChanged(
         width: Int,
         height: Int,
@@ -92,6 +77,13 @@ class TouchHelper {
         viewport = Size(width, height)
         texture = viewport
         cropOriginOffset = Offset(0f, 0f)
+        resetCropSelection()
+    }
+
+    // todo recreate
+    fun onTexturesCropped() {
+        cropOriginOffset += consumedTextureOffset
+        texture = croppedTextureSize
         resetCropSelection()
     }
 
@@ -190,30 +182,47 @@ class TouchHelper {
         }
     }
 
-    fun onTexturesCropped() {
-        cropOriginOffset += consumedTextureOffset
-        texture = croppedTextureSize
-        resetCropSelection()
-    }
-
-    /** range is [0f .. 1f] */
-    fun normalizedX(xOnTexture: Float) = xOnTexture * (texture.width.toFloat() / viewport.width) / viewport.width.toFloat()
-
-    /** range is [1f - textureHeight / viewportHeight .. 1f] */
-    fun normalizedY(yOnTexture: Float) =
-        1f - texture.height.toFloat() / viewport.height + yOnTexture * (texture.height.toFloat() / viewport.height) / viewport.height.toFloat()
-
-    @Suppress("NOTHING_TO_INLINE")
-    private inline operator fun RectF.contains(
-        point: PointF,
-    ) = point.x in left..right && point.y in top..bottom
-
-    // texture dx is initially set to 0, when user moves texture to the left -
-    // textureDx goes [-viewportWidth / 2, 0];
-    // when user moves texture to the right - it goes [0, viewPortWidth / 2];
-    private fun toTextureCoordinateX(viewportX: Float) = (viewportX - textureOffset.x + viewport.width / 2) / 2
-
-    // textureDy [-textureDy..textureDy], so need to divide by 2 before
-    private fun toTextureCoordinateY(viewportY: Float) = viewportY - textureOffset.y / 2
-
 }
+
+/**
+ * Texture size given current [TouchHelper.cropRect] and [TouchHelper.viewport]
+ */
+inline val TouchHelper.croppedTextureSize: Size
+    // new width = width * (selection.width / viewportWidth)
+    get() = Size(
+        (texture.width * (cropRect.width() / viewport.width)).roundToInt(),
+        (texture.height * (cropRect.height() / viewport.height)).roundToInt()
+    )
+
+private inline val TouchHelper.consumedTextureOffset: Offset
+    get() = Offset(
+        x = cropRect.left * (texture.width.toFloat() / viewport.width),
+        y = -(viewport.height - cropRect.bottom) * (texture.height.toFloat() / viewport.height)
+    )
+
+val TouchHelper.ratio: Float
+    get() = viewport.width.toFloat() / viewport.height
+
+/** range is [0f .. 1f] */
+fun TouchHelper.normalizedX(
+    xOnTexture: Float,
+): Float = xOnTexture * (texture.width.toFloat() / viewport.width) / viewport.width.toFloat()
+
+/** range is [1f - textureHeight / viewportHeight .. 1f] */
+fun TouchHelper.normalizedY(
+    yOnTexture: Float,
+): Float =
+    1f - texture.height.toFloat() / viewport.height + yOnTexture * (texture.height.toFloat() / viewport.height) / viewport.height.toFloat()
+
+// texture dx is initially set to 0, when user moves texture to the left -
+// textureDx goes [-viewportWidth / 2, 0];
+// when user moves texture to the right - it goes [0, viewPortWidth / 2];
+private fun TouchHelper.toTextureCoordinateX(viewportX: Float): Float = (viewportX - textureOffset.x + viewport.width / 2) / 2
+
+// textureDy [-textureDy..textureDy], so need to divide by 2 before
+private fun TouchHelper.toTextureCoordinateY(viewportY: Float): Float = viewportY - textureOffset.y / 2
+
+@Suppress("NOTHING_TO_INLINE")
+private inline operator fun RectF.contains(
+    point: PointF,
+): Boolean = point.x in left..right && point.y in top..bottom

@@ -49,7 +49,7 @@ class AppGLRenderer(
                     GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[0])
                     GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
                     bitmap.recycle()
-                    touchHelper.reset()
+                    state.helper.reset()
                     view.requestRender()
                 }
             }
@@ -68,8 +68,6 @@ class AppGLRenderer(
         0f, 0f,
         1f, 0f
     )
-
-    private val touchHelper = TouchHelper()
 
     init {
         view.setOnTouchListener(this)
@@ -93,7 +91,7 @@ class AppGLRenderer(
 
     private val colorTransformations = listOf(
         //GrayscaleTransformation(context, verticesBuffer, textureBuffer),
-        CropTransformation(context, verticesBuffer, textureBuffer, textures, touchHelper),
+        CropTransformation(context, verticesBuffer, textureBuffer, textures, state.helper),
         // HsvTransformation(context, verticesBuffer, textureBuffer),
         // ContrastTransformation(context, verticesBuffer, textureBuffer),
         // TintTransformation(context, verticesBuffer, textureBuffer),
@@ -149,16 +147,16 @@ class AppGLRenderer(
                 textures[index.takeIf { it == 0 } ?: (1 + ((1 + index) % (textures.size - 1)))],
             )
         }*/
-        val ratio = touchHelper.ratio
-        val zoom = touchHelper.zoom
+        val ratio = state.helper.ratio
+        val zoom = state.helper.zoom
 
         Matrix.frustumM(
             projectionMatrix,
             0,
-            (-ratio - touchHelper.textureOffset.x / touchHelper.viewport.width) / zoom,
-            (ratio - touchHelper.textureOffset.x / touchHelper.viewport.width) / zoom,
-            (1f - touchHelper.textureOffset.y / touchHelper.viewport.height) / zoom,
-            (-1f - touchHelper.textureOffset.y / touchHelper.viewport.height) / zoom,
+            (-ratio - state.helper.textureOffset.x / state.helper.viewport.width) / zoom,
+            (ratio - state.helper.textureOffset.x / state.helper.viewport.width) / zoom,
+            (1f - state.helper.textureOffset.y / state.helper.viewport.height) / zoom,
+            (-1f - state.helper.textureOffset.y / state.helper.viewport.height) / zoom,
             3f,
             7f
         )
@@ -173,8 +171,8 @@ class AppGLRenderer(
             GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffers[0])
             continuation.resume(
                 saveTextureToBitmap(
-                    touchHelper.cropRect.width().roundToInt(),
-                    touchHelper.cropRect.height().roundToInt()
+                    state.helper.cropRect.width().roundToInt(),
+                    state.helper.cropRect.height().roundToInt()
                 )
             )
         }
@@ -227,7 +225,7 @@ class AppGLRenderer(
             }
         }
 
-        touchHelper.onSurfaceChanged(width, height)
+        state.helper.onSurfaceChanged(width, height)
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -237,7 +235,7 @@ class AppGLRenderer(
     ): Boolean {
         //val crop = state.displayTransformations.crop
         val selectionMode = state.displayCropSelection
-        touchHelper.onTouch(event, selectionMode)
+        state.helper.onTouch(event, selectionMode)
         view.requestRender()
         return true
     }
