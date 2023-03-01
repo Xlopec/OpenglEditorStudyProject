@@ -11,7 +11,7 @@ class CropTransformation(
     private val context: Context,
     private val verticesCoordinates: FloatBuffer,
     private val textureCoordinates: FloatBuffer,
-    private val textures: IntArray,
+    private val textures: Textures,
     private val touchHelper: TouchHelper,
 ) : OpenglTransformation {
 
@@ -45,7 +45,7 @@ class CropTransformation(
             cropTextures = false
             val croppedTextureSize = touchHelper.croppedTextureSize
             // resize texture bound to this framebuffer
-            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[AppGLRenderer.CropTextureIdx])
+            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.cropTexture)
             GLES31.glTexImage2D(
                 GLES31.GL_TEXTURE_2D,
                 0,

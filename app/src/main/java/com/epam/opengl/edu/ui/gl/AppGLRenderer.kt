@@ -10,6 +10,8 @@ import android.view.MotionEvent
 import android.view.View
 import com.epam.opengl.edu.model.*
 import com.epam.opengl.edu.ui.MessageHandler
+import com.epam.opengl.edu.ui.gl.Textures.Companion.PingTextureIdx
+import com.epam.opengl.edu.ui.gl.Textures.Companion.PongTextureIdx
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -47,7 +49,7 @@ class AppGLRenderer(
                     // value writes/updates should happen on GL thread
                     field = value
                     val bitmap = with(context) { image.asBitmap() }
-                    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[0])
+                    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.originalTexture)
                     GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
                     bitmap.recycle()
                     state.helper.reset()
@@ -74,24 +76,7 @@ class AppGLRenderer(
         view.setOnTouchListener(this)
     }
 
-    private val matrixTransformation = MatrixTransformation(context, verticesBuffer, textureBuffer)
-
-    companion object {
-        const val OriginalTextureIdx = 0
-        const val PingTextureIdx = 1
-        const val PongTextureIdx = 2
-        const val CropTextureIdx = 3
-        const val CropFrameBufferIdx = 5
-    }
-
-    /**
-     * Holds ids of textures:
-     * * textures[0] holds original texture
-     * * textures[1] holds color attachment for ping-pong
-     * * textures[2] holds color attachment for ping-pong
-     */
-    private val textures = IntArray(4)
-
+    private val textures = Textures()
     private val colorTransformations = listOf(
         GrayscaleTransformation(context, verticesBuffer, textureBuffer),
         HsvTransformation(context, verticesBuffer, textureBuffer),
@@ -99,11 +84,12 @@ class AppGLRenderer(
         TintTransformation(context, verticesBuffer, textureBuffer),
         GaussianBlurTransformation(context, verticesBuffer, textureBuffer),
     )
-    private val frameBuffers = IntArray(colorTransformations.size + 1)
+    private val frameBuffers = FrameBuffers(colorTransformations.size + 1)
     private val projectionMatrix = FloatArray(16)
     private val vPMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
-    private val crop = CropTransformation(context, verticesBuffer, textureBuffer, textures, state.helper)
+    private val matrixTransformation = MatrixTransformation(context, verticesBuffer, textureBuffer)
+    private val cropTransformation = CropTransformation(context, verticesBuffer, textureBuffer, textures, state.helper)
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         view.renderMode = RENDERMODE_WHEN_DIRTY
@@ -120,8 +106,8 @@ class AppGLRenderer(
         }
 
         cooldownMillis = current
-        crop.cropTextures = true
-        crop.selectionMode = false
+        cropTransformation.cropTextures = true
+        cropTransformation.selectionMode = false
         view.requestRender()
     }
 
@@ -132,22 +118,18 @@ class AppGLRenderer(
         // ....
         // texture[last modified texture + 1] -> matrix transformation -> screen
         colorTransformations.fastForEachIndexed { index, transformation ->
-
-            val i = index.takeIf { it == 0 } ?: (1 + ((1 + index) % (textures.size - 2)))
-
-            println("fbo $index -> $i")
             transformation.draw(
                 transformations = state.displayTransformations,
                 fbo = frameBuffers[index],
                 // fbo index -> txt index mapping: 0 -> 0; 1 -> 1; 2 -> 2; 3 -> 1; 4 -> 2...
-                texture = textures[i],
+                texture = textures[index.takeIf { it == 0 } ?: (1 + ((1 + index) % (textures.size - 2)))],
             )
         }
 
-        crop.selectionMode = state.displayCropSelection
-        crop.draw(
+        cropTransformation.selectionMode = state.displayCropSelection
+        cropTransformation.draw(
             transformations = state.displayTransformations,
-            fbo = frameBuffers[CropFrameBufferIdx],
+            fbo = frameBuffers.cropFrameBuffer,
             texture = textures[(frameBuffers.size - 1) % (textures.size - 2)]
         )
 
@@ -168,7 +150,7 @@ class AppGLRenderer(
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1f, 0f)
         // Calculate the projection and view transformation
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-        matrixTransformation.render(vPMatrix, 0, textures[CropTextureIdx])
+        matrixTransformation.render(vPMatrix, 0, textures.cropTexture)
     }
 
     suspend fun bitmap(): Bitmap = suspendCoroutine { continuation ->
@@ -191,11 +173,11 @@ class AppGLRenderer(
 
         val bitmap = with(context) { image.asBitmap() }
 
-        GLES31.glGenTextures(textures.size, textures, 0)
-        GLES31.glGenFramebuffers(frameBuffers.size, frameBuffers, 0)
+        GLES31.glGenTextures(textures.size, textures.array, 0)
+        GLES31.glGenFramebuffers(frameBuffers.size, frameBuffers.array, 0)
 
         // bind and load original texture
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[0])
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.originalTexture)
         GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR)
         GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_LINEAR)
         GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S, GLES31.GL_CLAMP_TO_EDGE)
@@ -218,9 +200,8 @@ class AppGLRenderer(
                 "incorrect texture index, was $textureIndex"
             }
             setupFrameBuffer(width, height, textures[textureIndex], frameBuffers[frameBufferIndex])
-            println("binding $frameBufferIndex -> $textureIndex")
         }
-        setupFrameBuffer(width, height, textures[CropTextureIdx], frameBuffers[CropFrameBufferIdx])
+        setupFrameBuffer(width, height, textures.cropTexture, frameBuffers.cropFrameBuffer)
         state.helper.onSurfaceChanged(width, height)
     }
 
