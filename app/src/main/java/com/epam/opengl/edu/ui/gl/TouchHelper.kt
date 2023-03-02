@@ -52,12 +52,15 @@ class TouchHelper(
     var viewport = viewport
         private set
 
-    private var currentSpan = 0f
+    var currentSpan = 1f
+        private set
+    var initialSpan = 0f
+    var currentSpanX = 0f
     private val previousInput = PointF()
     private var oldSpan = Float.NaN
 
     val zoom: Float
-        get() = (currentSpan + viewport.width) / viewport.width.toFloat()
+        get() = 1.5f//if (initialSpan == 0f || currentSpan == 0f) 1f else currentSpan / initialSpan
 
     // todo recreate
     fun reset() {
@@ -93,7 +96,12 @@ class TouchHelper(
         event: MotionEvent,
         isCropSelectionMode: Boolean,
     ) {
-        val offset = Offset(event.x - previousInput.x, event.y - previousInput.y)
+        println("event x ${event.x}")
+        val offset = if (previousInput.x == 0f && previousInput.y == 0f) {
+            Offset(0f, 0f)
+        } else {
+            Offset(event.x - previousInput.x, event.y - previousInput.y)
+        }
 
         userInput.set(toTextureCoordinateX(event.x), toTextureCoordinateY(event.y))
         previousInput.set(event.x, event.y)
@@ -132,6 +140,7 @@ class TouchHelper(
 
         if (oldSpan.isNaN()) {
             oldSpan = span
+            initialSpan = span//event.x
         }
 
         if (event.action == MotionEvent.ACTION_MOVE) {
@@ -168,12 +177,13 @@ class TouchHelper(
                         // check crop selection won't exceed texture bounds
                         cropRect.offsetTo(
                             (cropRect.left + offset.x / 2).coerceIn(0f, viewport.width - cropRect.width()),
-                            (cropRect.top + offset.y).coerceIn(0f, viewport.height - cropRect.height())
+                            (cropRect.top - offset.y).coerceIn(0f, viewport.height - cropRect.height())
                         )
                     }
 
                     else -> {
                         textureOffset += offset
+                        println("offset ${textureOffset.x}")
                     }
                 }
             }
@@ -216,10 +226,26 @@ fun TouchHelper.normalizedY(
 ): Float =
     1f - texture.height.toFloat() / viewport.height + yOnTexture * (texture.height.toFloat() / viewport.height) / viewport.height.toFloat()
 
-// texture dx is initially set to 0, when user moves texture to the left -
-// textureDx goes [-viewportWidth / 2, 0];
-// when user moves texture to the right - it goes [0, viewPortWidth / 2];
-private fun TouchHelper.toTextureCoordinateX(viewportX: Float): Float = (viewportX - textureOffset.x + viewport.width / 2) / 2
+inline val TouchHelper.maxOffsetDistanceXBeforeEdgeVisible: Float
+    get() = 1 - ratio + (2 * ratio - 2 * ratio / zoom) / 2
+
+inline val TouchHelper.maxOffsetDistanceBeforeEdgeVisiblePx: Float
+    get() = maxOffsetDistanceXBeforeEdgeVisible * viewport.width
+
+inline val TouchHelper.consumedOffsetX: Float
+    get() = maxOffsetDistanceXBeforeEdgeVisible + (maxOffsetDistanceXBeforeEdgeVisible * -textureOffset.x / maxOffsetDistanceBeforeEdgeVisiblePx)
+
+//0.5258033 ratio, vp 1080 x 2054
+// 1080 x 1584
+private fun TouchHelper.toTextureCoordinateX(viewportX: Float): Float {
+    val consumedPx = 2 * ratio * (viewportX / viewport.width) / zoom
+    val realXNorm2 = consumedPx + consumedOffsetX
+    val result = (viewport.width * realXNorm2) / 2
+
+    println("result $result")
+
+    return result
+}
 
 // textureDy [-textureDy..textureDy], so need to divide by 2 before
 private fun TouchHelper.toTextureCoordinateY(viewportY: Float): Float =

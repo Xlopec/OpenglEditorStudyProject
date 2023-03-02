@@ -140,11 +140,17 @@ class AppGLRenderer(
         val ratio = state.helper.ratio
         val zoom = state.helper.zoom
 
+        // -1f .. 0 .. 1f
+
+        val consumedOffsetX =
+            state.helper.consumedOffsetX - state.helper.maxOffsetDistanceXBeforeEdgeVisible
+
+
         Matrix.frustumM(
             projectionMatrix,
             0,
-            (-ratio - state.helper.textureOffset.x / state.helper.viewport.width) / zoom,
-            (ratio - state.helper.textureOffset.x / state.helper.viewport.width) / zoom,
+            (-ratio / zoom) + consumedOffsetX,
+            (ratio / zoom) + consumedOffsetX,
             (-1f + state.helper.textureOffset.y / state.helper.viewport.height) / zoom,
             (1f + state.helper.textureOffset.y / state.helper.viewport.height) / zoom,
             3f,
