@@ -84,6 +84,8 @@ class AppGLRenderer(
         TintTransformation(context, verticesBuffer, textureBuffer),
         GaussianBlurTransformation(context, verticesBuffer, textureBuffer),
     )
+
+    // 1 extra buffer for cropping
     private val frameBuffers = FrameBuffers(colorTransformations.size + 1)
     private val projectionMatrix = FloatArray(16)
     private val vPMatrix = FloatArray(16)
@@ -111,7 +113,9 @@ class AppGLRenderer(
         view.requestRender()
     }
 
-    override fun onDrawFrame(gl: GL10) = with(gl) {
+    override fun onDrawFrame(
+        gl: GL10,
+    ) = with(gl) {
         // we're using previous texture as target for next transformations, render pipeline looks like the following
         // original texture -> grayscale transformation -> texture[1];
         // texture[1] -> hsv transformation -> texture[2];
@@ -165,7 +169,11 @@ class AppGLRenderer(
         }
     }
 
-    override fun onSurfaceChanged(gl: GL10, width: Int, height: Int) = with(gl) {
+    override fun onSurfaceChanged(
+        gl: GL10,
+        width: Int,
+        height: Int,
+    ) = with(gl) {
         GLES31.glViewport(0, 0, width, height)
         GLES31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
         GLES31.glEnable(GLES31.GL_BLEND)
