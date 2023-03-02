@@ -60,7 +60,7 @@ class TouchHelper(
     private var oldSpan = Float.NaN
 
     val zoom: Float
-        get() = 1.5f//if (initialSpan == 0f || currentSpan == 0f) 1f else currentSpan / initialSpan
+        get() = 2f//if (initialSpan == 0f || currentSpan == 0f) 1f else currentSpan / initialSpan
 
     // todo recreate
     fun reset() {
@@ -229,11 +229,24 @@ fun TouchHelper.normalizedY(
 inline val TouchHelper.maxOffsetDistanceXBeforeEdgeVisible: Float
     get() = 1 - ratio + (2 * ratio - 2 * ratio / zoom) / 2
 
+inline val TouchHelper.maxOffsetDistanceYBeforeEdgeVisible: Float
+    get() = (2f - 2f / zoom) / 2f
+
+inline val TouchHelper.maxOffsetDistanceYBeforeEdgeVisiblePx: Float
+    get() = maxOffsetDistanceYBeforeEdgeVisible * viewport.height
+
 inline val TouchHelper.maxOffsetDistanceBeforeEdgeVisiblePx: Float
     get() = maxOffsetDistanceXBeforeEdgeVisible * viewport.width
 
 inline val TouchHelper.consumedOffsetX: Float
     get() = maxOffsetDistanceXBeforeEdgeVisible + (maxOffsetDistanceXBeforeEdgeVisible * -textureOffset.x / maxOffsetDistanceBeforeEdgeVisiblePx)
+
+inline val TouchHelper.consumedOffsetY: Float
+    get() = if (maxOffsetDistanceXBeforeEdgeVisible == 0f) {
+        textureOffset.y / viewport.height
+    } else {
+        maxOffsetDistanceYBeforeEdgeVisible + (maxOffsetDistanceYBeforeEdgeVisible * textureOffset.y / maxOffsetDistanceYBeforeEdgeVisiblePx)
+    }
 
 //0.5258033 ratio, vp 1080 x 2054
 // 1080 x 1584
@@ -242,14 +255,21 @@ private fun TouchHelper.toTextureCoordinateX(viewportX: Float): Float {
     val realXNorm2 = consumedPx + consumedOffsetX
     val result = (viewport.width * realXNorm2) / 2
 
-    println("result $result")
+    println("result x  $result")
 
     return result
 }
 
 // textureDy [-textureDy..textureDy], so need to divide by 2 before
-private fun TouchHelper.toTextureCoordinateY(viewportY: Float): Float =
-    viewport.height - viewportY + textureOffset.y / 2
+private fun TouchHelper.toTextureCoordinateY(viewportY: Float): Float {
+    val invertPy = viewport.height - viewportY
+    val consumePy = 2 * (invertPy / viewport.height) / zoom
+    val realNormY = consumePy + consumedOffsetY
+    val result = (viewport.height * realNormY) / 2
+
+    println("result y $result")
+    return result
+}
 
 @Suppress("NOTHING_TO_INLINE")
 private inline operator fun RectF.contains(
