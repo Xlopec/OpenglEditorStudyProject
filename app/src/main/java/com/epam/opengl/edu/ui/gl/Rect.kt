@@ -54,12 +54,12 @@ fun Rect.offsetTo(
 )
 
 context (Size)
-fun Rect.offsetToWithinBounds(
+fun Rect.offsetByWithinBounds(
     offset: Offset,
 ): Rect {
     val size = size
-    val x = offset.x.coerceIn(0f, (width - size.width).toFloat())
-    val y = offset.y.coerceIn(0f, (height - size.height).toFloat())
+    val x = (topLeft.x + offset.x).coerceIn(0f, (width - size.width).toFloat())
+    val y = (topLeft.y + offset.y).coerceIn(0f, (height - size.height).toFloat())
 
     return offsetTo(Offset(x, y))
 }

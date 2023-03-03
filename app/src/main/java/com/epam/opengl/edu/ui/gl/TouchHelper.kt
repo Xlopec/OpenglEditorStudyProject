@@ -1,6 +1,5 @@
 package com.epam.opengl.edu.ui.gl
 
-import android.graphics.PointF
 import android.view.MotionEvent
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -57,7 +56,7 @@ class TouchHelper(
 
     // fixme problems with zoom
     private var currentSpan = 1f
-    private val previousInput = PointF()
+    private var previousInput = Px()
     private var oldSpan = Float.NaN
 
     val zoom: Float
@@ -69,11 +68,7 @@ class TouchHelper(
     ) {
         userInput = Px(toTextureCoordinateX(event.x), toTextureCoordinateY(event.y))
         val offset = Offset(userInput.x - previousInput.x, userInput.y - previousInput.y)
-
-        println("User input ${userInput.x}, ${userInput.y}")
-        println("Offset ${offset.x}, ${offset.y}")
-
-        previousInput.set(userInput.x, userInput.y)
+        previousInput = userInput
 
         if (event.pointerCount > 1) {
             handleZoom(event)
@@ -142,13 +137,7 @@ class TouchHelper(
                     }
 
                     isCropSelectionMode && userInput in rect -> {
-                        // check crop selection won't exceed texture bounds
-                        rect = rect.offsetToWithinBounds(
-                            Offset(
-                                x = rect.topLeft.x + offset.x,
-                                y = rect.topLeft.y + offset.y
-                            )
-                        )
+                        rect = rect.offsetByWithinBounds(offset)
                     }
 
                     else -> {
@@ -186,7 +175,7 @@ inline val TouchHelper.croppedTextureSize: Size
 private inline val TouchHelper.consumedTextureOffset: Offset
     get() = Offset(
         x = rect.topLeft.x * (texture.width.toFloat() / viewport.width),
-        y = -(viewport.height - rect.bottomRight.y) * (texture.height.toFloat() / viewport.height)
+        y = rect.topLeft.y * (texture.height.toFloat() / viewport.height)
     )
 
 val TouchHelper.ratio: Float

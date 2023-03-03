@@ -62,17 +62,13 @@ class CropTransformation(
             )
 
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-            // Coordinate origin is bottom left!
             GLES31.glUniform2f(
                 offsetHandle,
                 // plus origin offset since we're working with original texture!
                 (touchHelper.cropOriginOffset.x + touchHelper.rect.topLeft.x * (touchHelper.texture.width.toFloat() / touchHelper.viewport.width)) / touchHelper.viewport.width.toFloat(),
-                (touchHelper.cropOriginOffset.y - (touchHelper.viewport.height - touchHelper.rect.bottomRight.y) * (touchHelper.texture.height.toFloat() / touchHelper.viewport.height)) / touchHelper.viewport.height
+                // invert sign since origin for Y is bottom
+                -(touchHelper.cropOriginOffset.y + touchHelper.rect.topLeft.y * (touchHelper.texture.height.toFloat() / touchHelper.viewport.height)) / touchHelper.viewport.height
             )
-            // each time we crop texture we remove a texture part that is located to the left from cropRegion or viewportWidth - cropRegion.bottomRight.x.
-            // for x this part is going to be cropRegion.left.x, for y it'll be cropRegion.top.x or viewportHeight - cropRegion.bottomRight.y.
-            // we should accumulate this cropped deltas so that we can adjust crop origin.
-            // this must be done since we're working with original texture!
             handler(OnTouchHelperUpdated(touchHelper.onCropped()))
         } else if (selectionMode) {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
@@ -80,8 +76,10 @@ class CropTransformation(
             GLES31.glUniform4f(
                 cropRegionHandle,
                 touchHelper.normalizedX(touchHelper.rect.topLeft.x),
+                // Coordinate origin is bottom left!
                 1f - touchHelper.normalizedY(touchHelper.rect.topLeft.y),
                 touchHelper.normalizedX(touchHelper.rect.bottomRight.x),
+                // Coordinate origin is bottom left!
                 1f - touchHelper.normalizedY(touchHelper.rect.bottomRight.y)
             )
         } else {
@@ -91,6 +89,7 @@ class CropTransformation(
         GLES31.glUniform2f(
             pointerHandle,
             touchHelper.normalizedX(touchHelper.userInput.x),
+            // Coordinate origin is bottom left!
             1f - touchHelper.normalizedY(touchHelper.userInput.y)
         )
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
