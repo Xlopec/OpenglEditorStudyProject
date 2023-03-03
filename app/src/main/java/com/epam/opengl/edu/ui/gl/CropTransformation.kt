@@ -65,9 +65,9 @@ class CropTransformation(
             GLES31.glUniform2f(
                 offsetHandle,
                 // plus origin offset since we're working with original texture!
-                (touchHelper.cropOriginOffset.x + touchHelper.rect.topLeft.x * (touchHelper.texture.width.toFloat() / touchHelper.viewport.width)) / touchHelper.viewport.width.toFloat(),
+                (touchHelper.cropOriginOffset.x + touchHelper.selection.topLeft.x * (touchHelper.texture.width.toFloat() / touchHelper.viewport.width)) / touchHelper.viewport.width.toFloat(),
                 // invert sign since origin for Y is bottom
-                -(touchHelper.cropOriginOffset.y + touchHelper.rect.topLeft.y * (touchHelper.texture.height.toFloat() / touchHelper.viewport.height)) / touchHelper.viewport.height
+                -(touchHelper.cropOriginOffset.y + touchHelper.selection.topLeft.y * (touchHelper.texture.height.toFloat() / touchHelper.viewport.height)) / touchHelper.viewport.height
             )
             handler(OnTouchHelperUpdated(touchHelper.onCropped()))
         } else if (selectionMode) {
@@ -75,12 +75,12 @@ class CropTransformation(
             GLES31.glUniform1f(borderWidthHandle, transformations.crop.borderWidth.toFloat() / touchHelper.viewport.width)
             GLES31.glUniform4f(
                 cropRegionHandle,
-                touchHelper.normalizedX(touchHelper.rect.topLeft.x),
+                touchHelper.normalizedX(touchHelper.selection.topLeft.x),
                 // Coordinate origin is bottom left!
-                1f - touchHelper.normalizedY(touchHelper.rect.topLeft.y),
-                touchHelper.normalizedX(touchHelper.rect.bottomRight.x),
+                1f - touchHelper.normalizedY(touchHelper.selection.topLeft.y),
+                touchHelper.normalizedX(touchHelper.selection.bottomRight.x),
                 // Coordinate origin is bottom left!
-                1f - touchHelper.normalizedY(touchHelper.rect.bottomRight.y)
+                1f - touchHelper.normalizedY(touchHelper.selection.bottomRight.y)
             )
         } else {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)

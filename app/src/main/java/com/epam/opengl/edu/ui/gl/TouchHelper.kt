@@ -48,7 +48,7 @@ class TouchHelper(
     /**
      * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
      */
-    var rect = Rect(
+    var selection = Rect(
         topLeft = Px(),
         bottomRight = Px(viewport.width, viewport.height)
     )
@@ -120,24 +120,24 @@ class TouchHelper(
         when (event.action) {
             MotionEvent.ACTION_MOVE -> {
                 when {
-                    isCropSelectionMode && userInput.isOnRightEdgeOf(rect, TolerancePx) -> {
-                        rect = rect.moveRightEdgeWithinBounds(userInput.x)
+                    isCropSelectionMode && userInput.isOnRightEdgeOf(selection, TolerancePx) -> {
+                        selection = selection.moveRightEdgeWithinBounds(userInput.x)
                     }
 
-                    isCropSelectionMode && userInput.isOnLeftEdgeOf(rect, TolerancePx) -> {
-                        rect = rect.moveLeftEdgeWithinBounds(userInput.x)
+                    isCropSelectionMode && userInput.isOnLeftEdgeOf(selection, TolerancePx) -> {
+                        selection = selection.moveLeftEdgeWithinBounds(userInput.x)
                     }
 
-                    isCropSelectionMode && userInput.isOnTopEdgeOf(rect, TolerancePx) -> {
-                        rect = rect.moveTopEdgeWithinBounds(userInput.y)
+                    isCropSelectionMode && userInput.isOnTopEdgeOf(selection, TolerancePx) -> {
+                        selection = selection.moveTopEdgeWithinBounds(userInput.y)
                     }
 
-                    isCropSelectionMode && userInput.isOnBottomEdgeOf(rect, TolerancePx) -> {
-                        rect = rect.moveBottomEdgeWithinBounds(userInput.y)
+                    isCropSelectionMode && userInput.isOnBottomEdgeOf(selection, TolerancePx) -> {
+                        selection = selection.moveBottomEdgeWithinBounds(userInput.y)
                     }
 
-                    isCropSelectionMode && userInput in rect -> {
-                        rect = rect.offsetByWithinBounds(offset)
+                    isCropSelectionMode && userInput in selection -> {
+                        selection = selection.offsetByWithinBounds(offset)
                     }
 
                     else -> {
@@ -163,19 +163,19 @@ fun TouchHelper.onCropped(): TouchHelper = TouchHelper(
 )
 
 /**
- * Texture size given current [TouchHelper.cropRect] and [TouchHelper.viewport]
+ * Texture size given current [TouchHelper.selection] and [TouchHelper.viewport]
  */
 inline val TouchHelper.croppedTextureSize: Size
     // new width = width * (selection.width / viewportWidth)
     get() = Size(
-        (texture.width * (rect.size.width.toFloat() / viewport.width)).roundToInt(),
-        (texture.height * (rect.size.height.toFloat() / viewport.height)).roundToInt()
+        (texture.width * (selection.size.width.toFloat() / viewport.width)).roundToInt(),
+        (texture.height * (selection.size.height.toFloat() / viewport.height)).roundToInt()
     )
 
 private inline val TouchHelper.consumedTextureOffset: Offset
     get() = Offset(
-        x = (rect.topLeft.x * texture.width.toFloat() / viewport.width).roundToInt(),
-        y = (rect.topLeft.y * texture.height.toFloat() / viewport.height).roundToInt()
+        x = (selection.topLeft.x * texture.width.toFloat() / viewport.width).roundToInt(),
+        y = (selection.topLeft.y * texture.height.toFloat() / viewport.height).roundToInt()
     )
 
 val TouchHelper.ratio: Float

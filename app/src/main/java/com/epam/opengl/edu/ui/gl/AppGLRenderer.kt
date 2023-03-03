@@ -165,8 +165,8 @@ class AppGLRenderer(
             GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffers[0])
             continuation.resume(
                 saveTextureToBitmap(
-                    state.helper.rect.size.width,
-                    state.helper.rect.size.height
+                    state.helper.selection.size.width,
+                    state.helper.selection.size.height
                 )
             )
         }
