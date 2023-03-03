@@ -6,6 +6,8 @@ import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.OnTouchHelperUpdated
 import com.epam.opengl.edu.model.Transformations
 import com.epam.opengl.edu.ui.MessageHandler
+import com.epam.opengl.edu.ui.gl.geometry.component1
+import com.epam.opengl.edu.ui.gl.geometry.component2
 import com.epam.opengl.edu.ui.gl.geometry.height
 import com.epam.opengl.edu.ui.gl.geometry.width
 import com.epam.opengl.edu.ui.gl.geometry.x
@@ -76,31 +78,31 @@ class CropTransformation(
             handler(OnTouchHelperUpdated(touchHelper.onCropped()))
         } else if (selectionMode) {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-            GLES31.glUniform1f(borderWidthHandle, transformations.crop.borderWidth.toFloat() / touchHelper.viewport.width)
-            GLES31.glUniform4f(
-                cropRegionHandle,
-                touchHelper.normalizedX(touchHelper.selection.topLeft.x),
-                // Coordinate origin is bottom left!
-                1f - touchHelper.normalizedY(touchHelper.selection.topLeft.y),
-                touchHelper.normalizedX(touchHelper.selection.bottomRight.x),
-                // Coordinate origin is bottom left!
-                1f - touchHelper.normalizedY(touchHelper.selection.bottomRight.y)
+            GLES31.glUniform1f(
+                borderWidthHandle,
+                transformations.crop.borderWidth.toFloat() / touchHelper.viewport.width
             )
+
+            with(touchHelper) {
+                val (left, top) = touchHelper.selection.topLeft.toNormalized()
+                val (right, bottom) = touchHelper.selection.bottomRight.toNormalized()
+                // Coordinate origin is bottom left!
+                GLES31.glUniform4f(cropRegionHandle, left, 1f - top, right, 1f - bottom)
+            }
         } else {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
         }
 
-        GLES31.glUniform2f(
-            pointerHandle,
-            touchHelper.normalizedX(touchHelper.userInput.x),
+        with(touchHelper) {
+            val (x, y) = touchHelper.userInput.toNormalized()
             // Coordinate origin is bottom left!
-            1f - touchHelper.normalizedY(touchHelper.userInput.y)
-        )
-        GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
-        GLES31.glEnableVertexAttribArray(positionHandle)
-        GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4)
-        GLES31.glDisableVertexAttribArray(positionHandle)
-        GLES31.glDisableVertexAttribArray(texturePositionHandle)
+            GLES31.glUniform2f(pointerHandle, x, 1f - y)
+            GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
+            GLES31.glEnableVertexAttribArray(positionHandle)
+            GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4)
+            GLES31.glDisableVertexAttribArray(positionHandle)
+            GLES31.glDisableVertexAttribArray(texturePositionHandle)
+        }
     }
 
 }

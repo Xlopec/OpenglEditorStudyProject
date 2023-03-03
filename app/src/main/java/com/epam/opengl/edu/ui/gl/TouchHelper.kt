@@ -1,6 +1,7 @@
 package com.epam.opengl.edu.ui.gl
 
 import android.view.MotionEvent
+import com.epam.opengl.edu.ui.gl.geometry.NormalizedPoint
 import com.epam.opengl.edu.ui.gl.geometry.Offset
 import com.epam.opengl.edu.ui.gl.geometry.Point
 import com.epam.opengl.edu.ui.gl.geometry.Rect
@@ -85,18 +86,20 @@ class TouchHelper(
         event: MotionEvent,
         isCropSelectionMode: Boolean,
     ) {
-        userInput = Point(toTextureCoordinateX(event.x), toTextureCoordinateY(event.y))
+        userInput = event.toTexturePoint()
         val offset = Offset(userInput.x - previousInput.x, userInput.y - previousInput.y)
         previousInput = userInput
 
         if (event.pointerCount > 1) {
             handleZoom(event)
         } else {
-            handleMovement(event, isCropSelectionMode, offset)
+            handleMovement(event.action, isCropSelectionMode, offset)
         }
     }
 
-    private fun handleZoom(event: MotionEvent) {
+    private fun handleZoom(
+        event: MotionEvent,
+    ) {
         var focalX = 0f
         var focalY = 0f
 
@@ -132,11 +135,11 @@ class TouchHelper(
     }
 
     private fun handleMovement(
-        event: MotionEvent,
+        action: Int,
         isCropSelectionMode: Boolean,
         offset: Offset,
     ) = with(viewport) {
-        when (event.action) {
+        when (action) {
             MotionEvent.ACTION_MOVE -> {
                 when {
                     isCropSelectionMode && userInput.isOnRightEdgeOf(selection, TolerancePx) -> {
@@ -200,19 +203,15 @@ private inline val TouchHelper.consumedTextureOffset: Offset
 val TouchHelper.ratio: Float
     get() = viewport.width.toFloat() / viewport.height
 
-/**
- * Puts [xOnTexture] in range [0f .. 1f]
- * */
-fun TouchHelper.normalizedX(
-    xOnTexture: Int,
-): Float = xOnTexture * (texture.width.toFloat() / viewport.width) / viewport.width.toFloat()
-
-/**
- * Puts [yOnTexture] in range [0 .. 1f]
- * */
-fun TouchHelper.normalizedY(
-    yOnTexture: Int,
-): Float = yOnTexture * (texture.height.toFloat() / viewport.height) / viewport.height.toFloat()
+context (TouchHelper)
+        @Suppress("NOTHING_TO_INLINE")
+        inline fun Point.toNormalized(): NormalizedPoint =
+    NormalizedPoint(
+        // Puts x in range [0 .. 1f]
+        x = x * (texture.width.toFloat() / viewport.width) / viewport.width.toFloat(),
+        // Puts y in range [0 .. 1f]
+        y = y * (texture.height.toFloat() / viewport.height) / viewport.height.toFloat()
+    )
 
 inline val TouchHelper.maxOffsetDistanceXPointsBeforeEdgeVisible: Float
     get() = 1 - ratio + (2 * ratio - 2 * ratio / zoom) / 2
@@ -241,6 +240,17 @@ inline val TouchHelper.consumedOffsetYPoints: Float
     get() = maxOffsetDistanceYPointsBeforeEdgeVisible + textureOffsetYPoints
 
 /**
+ * Formula x = (viewport * (consumed_window_points + maxOffsetDistanceXPointsBeforeEdgeVisible + textureOffsetXPoints)) / 2
+ * Formula y = (viewport * (consumed_window_points + maxOffsetDistanceYPointsBeforeEdgeVisible + textureOffsetYPoints)) / 2
+ */
+context (TouchHelper)
+        private fun MotionEvent.toTexturePoint(): Point =
+    Point(
+        x = toTextureCoordinatesPx(consumedOffsetXPoints + consumedPointsX(x), viewport.width),
+        y = toTextureCoordinatesPx(consumedOffsetYPoints + consumedPointsY(y), viewport.height)
+    )
+
+/**
  * Returns how many points were consumed by viewport when x coordinate is [viewportX]
  * Return value in range 0..2
  *
@@ -257,21 +267,7 @@ private fun TouchHelper.consumedPointsX(viewportX: Float): Float = 2 * ratio * (
  * viewport.height - viewportY - inverted y coordinate
  */
 private fun TouchHelper.consumedPointsY(viewportY: Float): Float =
-    2 * ((/*viewport.height - */viewportY) / viewport.height) / zoom
-
-/**
- * Formula x = (viewport * (consumed_window_points + maxOffsetDistanceXPointsBeforeEdgeVisible + textureOffsetXPoints)) / 2
- */
-private fun TouchHelper.toTextureCoordinateX(
-    viewportX: Float,
-): Int = toTextureCoordinatesPx(consumedOffsetXPoints + consumedPointsX(viewportX), viewport.width)
-
-/**
- * Formula x = (viewport * (consumed_window_points + maxOffsetDistanceYPointsBeforeEdgeVisible + textureOffsetYPoints)) / 2
- */
-private fun TouchHelper.toTextureCoordinateY(
-    viewportY: Float,
-): Int = toTextureCoordinatesPx(consumedOffsetYPoints + consumedPointsY(viewportY), viewport.height)
+    2 * (viewportY / viewport.height) / zoom
 
 /**
  * Converts [point] in range -1..1 to texture coordinates in pixels in range [0..viewport]
