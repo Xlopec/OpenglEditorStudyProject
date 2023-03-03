@@ -18,4 +18,5 @@ fun update(
 
         OnDiscardChanges -> state.withEditMenu { discardEditedTransformation() }.noCommand()
         OnUndoTransformation -> state.withEditMenu { undoLastTransformation() }.noCommand()
+        is OnTouchHelperUpdated -> state.withEditMenu { updateTouchHelper(message.helper) }.noCommand()
     }

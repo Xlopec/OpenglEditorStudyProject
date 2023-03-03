@@ -91,7 +91,7 @@ class AppGLRenderer(
     private val vPMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
     private val matrixTransformation = MatrixTransformation(context, verticesBuffer, textureBuffer)
-    private val cropTransformation = CropTransformation(context, verticesBuffer, textureBuffer, textures, state.helper)
+    private val cropTransformation = CropTransformation(context, verticesBuffer, textureBuffer, textures, handler)
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         view.renderMode = RENDERMODE_WHEN_DIRTY
@@ -134,7 +134,8 @@ class AppGLRenderer(
         cropTransformation.draw(
             transformations = state.displayTransformations,
             fbo = frameBuffers.cropFrameBuffer,
-            texture = textures[(frameBuffers.size - 1) % (textures.size - 2)]
+            texture = textures[(frameBuffers.size - 1) % (textures.size - 2)],
+            touchHelper = state.helper
         )
 
         val ratio = state.helper.ratio
@@ -213,7 +214,8 @@ class AppGLRenderer(
             setupFrameBuffer(width, height, textures[textureIndex], frameBuffers[frameBufferIndex])
         }
         setupFrameBuffer(width, height, textures.cropTexture, frameBuffers.cropFrameBuffer)
-        state.helper.onSurfaceChanged(width, height)
+
+        handler(OnTouchHelperUpdated(TouchHelper(viewport = Size(width, height))))
     }
 
     context (GL)

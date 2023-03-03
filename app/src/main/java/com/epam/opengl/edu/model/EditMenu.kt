@@ -46,6 +46,10 @@ fun EditMenu.undoLastTransformation() =
         this
     }
 
+fun EditMenu.updateTouchHelper(
+    helper: TouchHelper,
+) = copy(helper = helper)
+
 fun EditMenu.updateTransformation(
     transformation: Transformation,
 ) = when (state) {

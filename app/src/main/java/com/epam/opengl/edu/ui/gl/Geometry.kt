@@ -1,6 +1,13 @@
 package com.epam.opengl.edu.ui.gl
 
-data class Size(val width: Int, val height: Int)
+data class Size(
+    val width: Int,
+    val height: Int,
+) {
+    init {
+        // require(width * height > 0) { "Invalid size: $this" }
+    }
+}
 
 @JvmInline
 value class Offset private constructor(

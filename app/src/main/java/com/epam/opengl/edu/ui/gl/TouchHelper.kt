@@ -8,27 +8,37 @@ import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 class TouchHelper(
-    viewport: Size = Size(0, 0),
+    /**
+     * Viewport size
+     */
+    val viewport: Size = Size(0, 0),
+    /**
+     * Current texture size, can't exceed [viewport] size
+     */
+    val texture: Size = viewport,
+    /**
+     * Texture offset accumulated relative to the left side of crop rect.
+     * This is needed to account invisible offset accumulated after each crop because
+     * we need to calculate offset in coordinate system of the original texture
+     */
+    val cropOriginOffset: Offset = Offset(0f, 0f),
 ) {
+
+    init {
+        require(texture.width <= viewport.width && texture.height <= viewport.height) {
+            "texture size can't be larger than viewport $texture > $viewport"
+        }
+    }
 
     companion object {
         const val TolerancePx = 30f
         const val MinSize = TolerancePx * 3
-        const val NoZoom = 1f
     }
 
     /**
      * Texture offset in viewport coordinate system
      */
     var textureOffset = Offset()
-        private set
-
-    /**
-     * Texture offset accumulated relative to the left side of crop rect.
-     * This is needed to account invisible offset accumulated after each crop because
-     * we need to calculate offset in coordinate system of the original texture
-     */
-    var cropOriginOffset = Offset()
         private set
 
     /**
@@ -40,18 +50,6 @@ class TouchHelper(
      * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
      */
     val cropRect = RectF(0f, 0f, viewport.width.toFloat(), viewport.height.toFloat())
-
-    /**
-     * Current texture size, can't exceed [viewport] size
-     */
-    var texture = viewport
-        private set
-
-    /**
-     * Viewport size
-     */
-    var viewport = viewport
-        private set
 
     var currentSpan = 1f
         private set
@@ -69,27 +67,16 @@ class TouchHelper(
     }
 
     // todo recreate
-    fun resetCropSelection() {
+    /*fun resetCropSelection() {
         cropRect.set(0f, 0f, viewport.width.toFloat(), viewport.height.toFloat())
-    }
+    }*/
 
     // todo recreate
-    fun onSurfaceChanged(
-        width: Int,
-        height: Int,
-    ) {
-        viewport = Size(width, height)
-        texture = viewport
-        cropOriginOffset = Offset(0f, 0f)
-        resetCropSelection()
-    }
-
-    // todo recreate
-    fun onTexturesCropped() {
+    /*fun onTexturesCropped() {
         cropOriginOffset += consumedTextureOffset
         texture = croppedTextureSize
         resetCropSelection()
-    }
+    }*/
 
     fun onTouch(
         event: MotionEvent,
@@ -187,6 +174,12 @@ class TouchHelper(
     }
 
 }
+
+fun TouchHelper.onCropped(): TouchHelper = TouchHelper(
+    viewport = viewport,
+    texture = croppedTextureSize,
+    cropOriginOffset = cropOriginOffset + consumedTextureOffset
+)
 
 /**
  * Texture size given current [TouchHelper.cropRect] and [TouchHelper.viewport]

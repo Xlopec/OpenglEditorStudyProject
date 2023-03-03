@@ -3,7 +3,9 @@ package com.epam.opengl.edu.ui.gl
 import android.content.Context
 import android.opengl.GLES31
 import com.epam.opengl.edu.R
+import com.epam.opengl.edu.model.OnTouchHelperUpdated
 import com.epam.opengl.edu.model.Transformations
+import com.epam.opengl.edu.ui.MessageHandler
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
 
@@ -12,11 +14,11 @@ class CropTransformation(
     private val verticesCoordinates: FloatBuffer,
     private val textureCoordinates: FloatBuffer,
     private val textures: Textures,
-    private val touchHelper: TouchHelper,
-) : OpenglTransformation {
+    private val handler: MessageHandler,
+) {
 
     context (GL)
-    private val program by lazy {
+            private val program by lazy {
         context.loadProgram(R.raw.no_transform_vertex, R.raw.frag_crop)
     }
 
@@ -24,10 +26,11 @@ class CropTransformation(
     var selectionMode = false
 
     context (GL)
-    override fun draw(
+    fun draw(
         transformations: Transformations,
         fbo: Int,
         texture: Int,
+        touchHelper: TouchHelper,
     ) {
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, fbo)
         GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
@@ -70,7 +73,7 @@ class CropTransformation(
             // for x this part is going to be cropRegion.left.x, for y it'll be cropRegion.top.x or viewportHeight - cropRegion.bottomRight.y.
             // we should accumulate this cropped deltas so that we can adjust crop origin.
             // this must be done since we're working with original texture!
-            touchHelper.onTexturesCropped()
+            handler(OnTouchHelperUpdated(touchHelper.onCropped()))
         } else if (selectionMode) {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
             GLES31.glUniform1f(borderWidthHandle, transformations.crop.borderWidth.toFloat() / touchHelper.viewport.width)
