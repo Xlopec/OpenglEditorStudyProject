@@ -1,7 +1,6 @@
 package com.epam.opengl.edu.ui.gl
 
 import android.graphics.PointF
-import android.graphics.RectF
 import android.view.MotionEvent
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -50,9 +49,13 @@ class TouchHelper(
     /**
      * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
      */
-    val cropRect = RectF(0f, 0f, viewport.width.toFloat(), viewport.height.toFloat())
+    //val cropRect = RectF(0f, 0f, viewport.width.toFloat(), viewport.height.toFloat())
 
-    private var currentSpan = 0f
+    var rect = Rect(Px(), Px(viewport.width.toFloat(), viewport.height.toFloat()))
+        private set
+
+    // fixme problems with zoom
+    private var currentSpan = 1f
     private val previousInput = PointF()
     private var oldSpan = Float.NaN
 
@@ -118,28 +121,37 @@ class TouchHelper(
         when (event.action) {
             MotionEvent.ACTION_MOVE -> {
                 when {
-                    isCropSelectionMode && abs(userInput.x - cropRect.right) <= TolerancePx && userInput.y in cropRect.top..cropRect.bottom -> {
-                        cropRect.right = userInput.x.coerceAtLeast(cropRect.left + MinSize)
+                    isCropSelectionMode && abs(userInput.x - rect.bottomRight.x) <= TolerancePx && userInput.y in rect.topLeft.y..rect.bottomRight.y -> {
+                        rect = rect.moveRightEdge(userInput.x.coerceAtLeast(rect.topLeft.x + MinSize))
                     }
 
-                    isCropSelectionMode && abs(userInput.x - cropRect.left) <= TolerancePx && userInput.y in cropRect.top..cropRect.bottom -> {
-                        cropRect.left = userInput.x.coerceAtMost(cropRect.right - MinSize)
+                    isCropSelectionMode && abs(userInput.x - rect.topLeft.x) <= TolerancePx && userInput.y in rect.topLeft.y..rect.bottomRight.y -> {
+                        rect = rect.moveLeftEdge(userInput.x.coerceAtMost(rect.bottomRight.x - MinSize))
                     }
 
-                    isCropSelectionMode && abs(userInput.y - cropRect.top) <= TolerancePx && userInput.x in cropRect.left..cropRect.right -> {
-                        cropRect.top = userInput.y.coerceAtMost(cropRect.bottom - MinSize)
+                    isCropSelectionMode && abs(userInput.y - rect.topLeft.y) <= TolerancePx && userInput.x in rect.topLeft.x..rect.bottomRight.x -> {
+                        rect = rect.moveTopEdge(userInput.y.coerceAtMost(rect.bottomRight.y - MinSize))
                     }
 
-                    isCropSelectionMode && abs(userInput.y - cropRect.bottom) <= TolerancePx && userInput.x in cropRect.left..cropRect.right -> {
-                        cropRect.bottom = userInput.y.coerceAtLeast(cropRect.top + MinSize)
-                    }
-
-                    isCropSelectionMode && userInput in cropRect -> {
-                        // check crop selection won't exceed texture bounds
-                        cropRect.offsetTo(
-                            (cropRect.left + offset.x).coerceIn(0f, viewport.width - cropRect.width()),
-                            (cropRect.top - offset.y).coerceIn(0f, viewport.height - cropRect.height())
+                    isCropSelectionMode && abs(userInput.y - rect.bottomRight.y) <= TolerancePx && userInput.x in rect.topLeft.x..rect.bottomRight.x -> {
+                        rect = rect.moveBottomEdge(
+                            userInput.y.coerceIn(
+                                rect.topLeft.y + MinSize,
+                                viewport.height.toFloat()
+                            )
                         )
+                    }
+
+                    isCropSelectionMode && userInput in rect -> {
+                        // check crop selection won't exceed texture bounds
+                        with(viewport) {
+                            rect = rect.offsetToWithinBounds(
+                                Offset(
+                                    x = rect.topLeft.x + offset.x,
+                                    y = rect.topLeft.y - offset.y
+                                )
+                            )
+                        }
                     }
 
                     else -> {
@@ -170,14 +182,14 @@ fun TouchHelper.onCropped(): TouchHelper = TouchHelper(
 inline val TouchHelper.croppedTextureSize: Size
     // new width = width * (selection.width / viewportWidth)
     get() = Size(
-        (texture.width * (cropRect.width() / viewport.width)).roundToInt(),
-        (texture.height * (cropRect.height() / viewport.height)).roundToInt()
+        (texture.width * (rect.size.width.toFloat() / viewport.width)).roundToInt(),
+        (texture.height * (rect.size.height.toFloat() / viewport.height)).roundToInt()
     )
 
 private inline val TouchHelper.consumedTextureOffset: Offset
     get() = Offset(
-        x = cropRect.left * (texture.width.toFloat() / viewport.width),
-        y = -(viewport.height - cropRect.bottom) * (texture.height.toFloat() / viewport.height)
+        x = rect.topLeft.x * (texture.width.toFloat() / viewport.width),
+        y = -(viewport.height - rect.bottomRight.y) * (texture.height.toFloat() / viewport.height)
     )
 
 val TouchHelper.ratio: Float
@@ -263,6 +275,6 @@ private fun toTextureCoordinatesPx(
 ): Float = (viewport * point) / 2
 
 @Suppress("NOTHING_TO_INLINE")
-private inline operator fun RectF.contains(
+private inline operator fun Rect.contains(
     point: Px,
-): Boolean = point.x in left..right && point.y in top..bottom
+): Boolean = point.x in topLeft.x..bottomRight.x && point.y in topLeft.y..bottomRight.y

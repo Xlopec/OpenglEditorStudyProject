@@ -20,7 +20,6 @@ import javax.microedition.khronos.opengles.GL
 import javax.microedition.khronos.opengles.GL10
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import kotlin.math.roundToInt
 
 class AppGLRenderer(
     private val context: Context,
@@ -166,8 +165,8 @@ class AppGLRenderer(
             GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffers[0])
             continuation.resume(
                 saveTextureToBitmap(
-                    state.helper.cropRect.width().roundToInt(),
-                    state.helper.cropRect.height().roundToInt()
+                    state.helper.rect.size.width,
+                    state.helper.rect.size.height
                 )
             )
         }
