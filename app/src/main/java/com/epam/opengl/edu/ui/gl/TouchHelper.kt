@@ -49,9 +49,10 @@ class TouchHelper(
     /**
      * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
      */
-    //val cropRect = RectF(0f, 0f, viewport.width.toFloat(), viewport.height.toFloat())
-
-    var rect = Rect(Px(), Px(viewport.width.toFloat(), viewport.height.toFloat()))
+    var rect = Rect(
+        topLeft = Px(),
+        bottomRight = Px(viewport.width.toFloat(), viewport.height.toFloat())
+    )
         private set
 
     // fixme problems with zoom
@@ -66,10 +67,13 @@ class TouchHelper(
         event: MotionEvent,
         isCropSelectionMode: Boolean,
     ) {
-        val offset = Offset(event.x - previousInput.x, event.y - previousInput.y)
-
         userInput = Px(toTextureCoordinateX(event.x), toTextureCoordinateY(event.y))
-        previousInput.set(event.x, event.y)
+        val offset = Offset(userInput.x - previousInput.x, previousInput.y - userInput.y)
+
+        println("User input ${userInput.x}, ${userInput.y}")
+        println("Offset ${offset.x}, ${offset.y}")
+
+        previousInput.set(userInput.x, userInput.y)
 
         if (event.pointerCount > 1) {
             handleZoom(event)
@@ -122,15 +126,16 @@ class TouchHelper(
             MotionEvent.ACTION_MOVE -> {
                 when {
                     isCropSelectionMode && abs(userInput.x - rect.bottomRight.x) <= TolerancePx && userInput.y in rect.topLeft.y..rect.bottomRight.y -> {
-                        rect = rect.moveRightEdge(userInput.x.coerceAtLeast(rect.topLeft.x + MinSize))
+                        rect =
+                            rect.moveRightEdge(userInput.x.coerceIn(rect.topLeft.x + MinSize, viewport.width.toFloat()))
                     }
 
                     isCropSelectionMode && abs(userInput.x - rect.topLeft.x) <= TolerancePx && userInput.y in rect.topLeft.y..rect.bottomRight.y -> {
-                        rect = rect.moveLeftEdge(userInput.x.coerceAtMost(rect.bottomRight.x - MinSize))
+                        rect = rect.moveLeftEdge(userInput.x.coerceIn(0f, rect.bottomRight.x - MinSize))
                     }
 
                     isCropSelectionMode && abs(userInput.y - rect.topLeft.y) <= TolerancePx && userInput.x in rect.topLeft.x..rect.bottomRight.x -> {
-                        rect = rect.moveTopEdge(userInput.y.coerceAtMost(rect.bottomRight.y - MinSize))
+                        rect = rect.moveTopEdge(userInput.y.coerceIn(0f, rect.bottomRight.y - MinSize))
                     }
 
                     isCropSelectionMode && abs(userInput.y - rect.bottomRight.y) <= TolerancePx && userInput.x in rect.topLeft.x..rect.bottomRight.x -> {

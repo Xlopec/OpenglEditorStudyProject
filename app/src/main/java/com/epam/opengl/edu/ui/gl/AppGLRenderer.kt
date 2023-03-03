@@ -144,14 +144,14 @@ class AppGLRenderer(
         val consumedOffsetY = state.helper.textureOffsetYPoints
 
         Matrix.frustumM(
-            projectionMatrix,
-            0,
-            -ratio / zoom + consumedOffsetX,
-            ratio / zoom + consumedOffsetX,
-            -1f / zoom + consumedOffsetY,
-            1f / zoom + consumedOffsetY,
-            3f,
-            7f
+            /* m = */ projectionMatrix,
+            /* offset = */ 0,
+            /* left = */ -ratio / zoom + consumedOffsetX,
+            /* right = */ ratio / zoom + consumedOffsetX,
+            /* bottom = */ -1f / zoom + consumedOffsetY,
+            /* top = */ 1f / zoom + consumedOffsetY,
+            /* near = */ 3f,
+            /* far = */ 7f
         )
 
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1f, 0f)
