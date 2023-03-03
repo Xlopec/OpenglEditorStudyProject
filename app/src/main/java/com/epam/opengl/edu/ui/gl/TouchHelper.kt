@@ -19,7 +19,7 @@ class TouchHelper(
      * This is needed to account invisible offset accumulated after each crop because
      * we need to calculate offset in coordinate system of the original texture
      */
-    val cropOriginOffset: Offset = Offset(0f, 0f),
+    val cropOriginOffset: Offset = Offset(0, 0),
 ) {
 
     init {
@@ -29,7 +29,7 @@ class TouchHelper(
     }
 
     companion object {
-        const val TolerancePx = 30f
+        const val TolerancePx = 30
         const val MinSize = TolerancePx * 3
     }
 
@@ -50,7 +50,7 @@ class TouchHelper(
      */
     var rect = Rect(
         topLeft = Px(),
-        bottomRight = Px(viewport.width.toFloat(), viewport.height.toFloat())
+        bottomRight = Px(viewport.width, viewport.height)
     )
         private set
 
@@ -174,8 +174,8 @@ inline val TouchHelper.croppedTextureSize: Size
 
 private inline val TouchHelper.consumedTextureOffset: Offset
     get() = Offset(
-        x = rect.topLeft.x * (texture.width.toFloat() / viewport.width),
-        y = rect.topLeft.y * (texture.height.toFloat() / viewport.height)
+        x = (rect.topLeft.x * texture.width.toFloat() / viewport.width).roundToInt(),
+        y = (rect.topLeft.y * texture.height.toFloat() / viewport.height).roundToInt()
     )
 
 val TouchHelper.ratio: Float
@@ -185,14 +185,14 @@ val TouchHelper.ratio: Float
  * Puts [xOnTexture] in range [0f .. 1f]
  * */
 fun TouchHelper.normalizedX(
-    xOnTexture: Float,
+    xOnTexture: Int,
 ): Float = xOnTexture * (texture.width.toFloat() / viewport.width) / viewport.width.toFloat()
 
 /**
  * Puts [yOnTexture] in range [0 .. 1f]
  * */
 fun TouchHelper.normalizedY(
-    yOnTexture: Float,
+    yOnTexture: Int,
 ): Float = yOnTexture * (texture.height.toFloat() / viewport.height) / viewport.height.toFloat()
 
 inline val TouchHelper.maxOffsetDistanceXPointsBeforeEdgeVisible: Float
@@ -245,14 +245,14 @@ private fun TouchHelper.consumedPointsY(viewportY: Float): Float =
  */
 private fun TouchHelper.toTextureCoordinateX(
     viewportX: Float,
-): Float = toTextureCoordinatesPx(consumedOffsetXPoints + consumedPointsX(viewportX), viewport.width)
+): Int = toTextureCoordinatesPx(consumedOffsetXPoints + consumedPointsX(viewportX), viewport.width)
 
 /**
  * Formula x = (viewport * (consumed_window_points + maxOffsetDistanceYPointsBeforeEdgeVisible + textureOffsetYPoints)) / 2
  */
 private fun TouchHelper.toTextureCoordinateY(
     viewportY: Float,
-): Float = toTextureCoordinatesPx(consumedOffsetYPoints + consumedPointsY(viewportY), viewport.height)
+): Int = toTextureCoordinatesPx(consumedOffsetYPoints + consumedPointsY(viewportY), viewport.height)
 
 /**
  * Converts [point] in range -1..1 to texture coordinates in pixels in range [0..viewport]
@@ -260,7 +260,7 @@ private fun TouchHelper.toTextureCoordinateY(
 private fun toTextureCoordinatesPx(
     point: Float,
     viewport: Int,
-): Float = (viewport * point) / 2
+): Int = (viewport * point / 2).roundToInt()
 
 @Suppress("NOTHING_TO_INLINE")
 private inline operator fun Rect.contains(

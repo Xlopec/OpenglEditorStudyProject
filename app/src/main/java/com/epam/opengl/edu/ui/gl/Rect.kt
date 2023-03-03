@@ -1,7 +1,6 @@
 package com.epam.opengl.edu.ui.gl
 
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 data class Rect(
     val topLeft: Px,
@@ -10,39 +9,39 @@ data class Rect(
 
 inline val Rect.size: Size
     get() = Size(
-        width = (bottomRight.x - topLeft.x).roundToInt(),
-        height = (bottomRight.y - topLeft.y).roundToInt()
+        width = bottomRight.x - topLeft.x,
+        height = bottomRight.y - topLeft.y
     )
 
 context (Size)
 fun Rect.moveRightEdgeWithinBounds(
-    toX: Float,
+    toX: Int,
 ): Rect {
-    val coercedX = toX.coerceIn(topLeft.x + TouchHelper.MinSize, width.toFloat())
+    val coercedX = toX.coerceIn(topLeft.x + TouchHelper.MinSize, width)
     return copy(bottomRight = Px(x = coercedX, y = bottomRight.y))
 }
 
 context (Size)
 fun Rect.moveLeftEdgeWithinBounds(
-    toX: Float,
+    toX: Int,
 ): Rect {
-    val coercedX = toX.coerceIn(0f, bottomRight.x - TouchHelper.MinSize)
+    val coercedX = toX.coerceIn(0, bottomRight.x - TouchHelper.MinSize)
     return copy(topLeft = Px(x = coercedX, y = topLeft.y))
 }
 
 context (Size)
 fun Rect.moveTopEdgeWithinBounds(
-    toY: Float,
+    toY: Int,
 ): Rect {
-    val coercedY = toY.coerceIn(0f, bottomRight.y - TouchHelper.MinSize)
+    val coercedY = toY.coerceIn(0, bottomRight.y - TouchHelper.MinSize)
     return copy(topLeft = Px(x = topLeft.x, y = coercedY))
 }
 
 context (Size)
 fun Rect.moveBottomEdgeWithinBounds(
-    toY: Float,
+    toY: Int,
 ): Rect {
-    val coercedY = toY.coerceIn(topLeft.y + TouchHelper.MinSize, height.toFloat())
+    val coercedY = toY.coerceIn(topLeft.y + TouchHelper.MinSize, height)
     return copy(bottomRight = Px(x = bottomRight.x, y = coercedY))
 }
 
@@ -58,29 +57,29 @@ fun Rect.offsetByWithinBounds(
     offset: Offset,
 ): Rect {
     val size = size
-    val x = (topLeft.x + offset.x).coerceIn(0f, (width - size.width).toFloat())
-    val y = (topLeft.y + offset.y).coerceIn(0f, (height - size.height).toFloat())
+    val x = (topLeft.x + offset.x).coerceIn(0, width - size.width)
+    val y = (topLeft.y + offset.y).coerceIn(0, height - size.height)
 
     return offsetTo(Offset(x, y))
 }
 
 fun Px.isOnRightEdgeOf(
     rect: Rect,
-    tolerancePx: Float,
+    tolerancePx: Int,
 ): Boolean = abs(x - rect.bottomRight.x) <= tolerancePx && y in rect.topLeft.y..rect.bottomRight.y
 
 fun Px.isOnLeftEdgeOf(
     rect: Rect,
-    tolerancePx: Float,
+    tolerancePx: Int,
 ): Boolean = abs(x - rect.topLeft.x) <= tolerancePx && y in rect.topLeft.y..rect.bottomRight.y
 
 
 fun Px.isOnTopEdgeOf(
     rect: Rect,
-    tolerancePx: Float,
+    tolerancePx: Int,
 ): Boolean = abs(y - rect.topLeft.y) <= tolerancePx && x in rect.topLeft.x..rect.bottomRight.x
 
 fun Px.isOnBottomEdgeOf(
     rect: Rect,
-    tolerancePx: Float,
+    tolerancePx: Int,
 ): Boolean = abs(y - rect.bottomRight.y) <= tolerancePx && x in rect.topLeft.x..rect.bottomRight.x
