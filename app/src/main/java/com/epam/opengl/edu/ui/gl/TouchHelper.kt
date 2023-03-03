@@ -44,7 +44,8 @@ class TouchHelper(
     /**
      * User input in texture coordinate system
      */
-    val userInput = PointF()
+    var userInput = Px()
+        private set
 
     /**
      * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
@@ -64,7 +65,7 @@ class TouchHelper(
     ) {
         val offset = Offset(event.x - previousInput.x, event.y - previousInput.y)
 
-        userInput.set(toTextureCoordinateX(event.x), toTextureCoordinateY(event.y))
+        userInput = Px(toTextureCoordinateX(event.x), toTextureCoordinateY(event.y))
         previousInput.set(event.x, event.y)
 
         if (event.pointerCount > 1) {
@@ -263,5 +264,5 @@ private fun toTextureCoordinatesPx(
 
 @Suppress("NOTHING_TO_INLINE")
 private inline operator fun RectF.contains(
-    point: PointF,
+    point: Px,
 ): Boolean = point.x in left..right && point.y in top..bottom

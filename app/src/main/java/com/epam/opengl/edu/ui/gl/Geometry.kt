@@ -10,6 +10,20 @@ data class Size(
 }
 
 @JvmInline
+value class Px private constructor(
+    val value: Long,
+) {
+    constructor(x: Float, y: Float) : this(packFloats(x, y))
+    constructor() : this(0)
+}
+
+inline val Px.x: Float
+    get() = unpackFloat1(value)
+
+inline val Px.y: Float
+    get() = unpackFloat2(value)
+
+@JvmInline
 value class Offset private constructor(
     val value: Long,
 ) {
