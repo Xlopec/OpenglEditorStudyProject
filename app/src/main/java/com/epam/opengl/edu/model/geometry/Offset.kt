@@ -1,4 +1,4 @@
-package com.epam.opengl.edu.ui.gl.geometry
+package com.epam.opengl.edu.model.geometry
 
 @JvmInline
 value class Offset private constructor(
@@ -6,6 +6,10 @@ value class Offset private constructor(
 ) {
     constructor(x: Int, y: Int) : this(packInts(x, y))
     constructor() : this(0)
+
+    override fun toString(): String {
+        return "Offset(x=$x, y=$y)"
+    }
 }
 
 inline operator fun Offset.plus(

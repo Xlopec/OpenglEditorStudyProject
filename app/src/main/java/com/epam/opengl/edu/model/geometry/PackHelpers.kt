@@ -1,6 +1,6 @@
 @file:Suppress("NOTHING_TO_INLINE")
 
-package com.epam.opengl.edu.ui.gl.geometry
+package com.epam.opengl.edu.model.geometry
 
 /**
  * Packs two Float values into one Long value for use in inline classes.

@@ -1,6 +1,6 @@
-package com.epam.opengl.edu.ui.gl.geometry
+package com.epam.opengl.edu.model.geometry
 
-import com.epam.opengl.edu.ui.gl.TouchHelper
+import com.epam.opengl.edu.model.transformation.Scene
 import kotlin.math.abs
 
 data class Rect(
@@ -18,7 +18,7 @@ context (Size)
 fun Rect.moveRightEdgeWithinBounds(
     toX: Int,
 ): Rect {
-    val coercedX = toX.coerceIn(topLeft.x + TouchHelper.MinSize, width)
+    val coercedX = toX.coerceIn(topLeft.x + Scene.MinSize, width)
     return copy(bottomRight = Point(x = coercedX, y = bottomRight.y))
 }
 
@@ -26,7 +26,7 @@ context (Size)
 fun Rect.moveLeftEdgeWithinBounds(
     toX: Int,
 ): Rect {
-    val coercedX = toX.coerceIn(0, bottomRight.x - TouchHelper.MinSize)
+    val coercedX = toX.coerceIn(0, bottomRight.x - Scene.MinSize)
     return copy(topLeft = Point(x = coercedX, y = topLeft.y))
 }
 
@@ -34,7 +34,7 @@ context (Size)
 fun Rect.moveTopEdgeWithinBounds(
     toY: Int,
 ): Rect {
-    val coercedY = toY.coerceIn(0, bottomRight.y - TouchHelper.MinSize)
+    val coercedY = toY.coerceIn(0, bottomRight.y - Scene.MinSize)
     return copy(topLeft = Point(x = topLeft.x, y = coercedY))
 }
 
@@ -42,7 +42,7 @@ context (Size)
 fun Rect.moveBottomEdgeWithinBounds(
     toY: Int,
 ): Rect {
-    val coercedY = toY.coerceIn(topLeft.y + TouchHelper.MinSize, height)
+    val coercedY = toY.coerceIn(topLeft.y + Scene.MinSize, height)
     return copy(bottomRight = Point(x = bottomRight.x, y = coercedY))
 }
 

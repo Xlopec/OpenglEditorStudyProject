@@ -1,35 +1,38 @@
-package com.epam.opengl.edu.ui.gl
+package com.epam.opengl.edu.model.transformation
 
 import android.view.MotionEvent
-import com.epam.opengl.edu.ui.gl.geometry.NormalizedPoint
-import com.epam.opengl.edu.ui.gl.geometry.Offset
-import com.epam.opengl.edu.ui.gl.geometry.Point
-import com.epam.opengl.edu.ui.gl.geometry.Rect
-import com.epam.opengl.edu.ui.gl.geometry.Size
-import com.epam.opengl.edu.ui.gl.geometry.height
-import com.epam.opengl.edu.ui.gl.geometry.isOnBottomEdgeOf
-import com.epam.opengl.edu.ui.gl.geometry.isOnLeftEdgeOf
-import com.epam.opengl.edu.ui.gl.geometry.isOnRightEdgeOf
-import com.epam.opengl.edu.ui.gl.geometry.isOnTopEdgeOf
-import com.epam.opengl.edu.ui.gl.geometry.moveBottomEdgeWithinBounds
-import com.epam.opengl.edu.ui.gl.geometry.moveLeftEdgeWithinBounds
-import com.epam.opengl.edu.ui.gl.geometry.moveRightEdgeWithinBounds
-import com.epam.opengl.edu.ui.gl.geometry.moveTopEdgeWithinBounds
-import com.epam.opengl.edu.ui.gl.geometry.offsetByWithinBounds
-import com.epam.opengl.edu.ui.gl.geometry.plus
-import com.epam.opengl.edu.ui.gl.geometry.size
-import com.epam.opengl.edu.ui.gl.geometry.width
-import com.epam.opengl.edu.ui.gl.geometry.x
-import com.epam.opengl.edu.ui.gl.geometry.y
+import com.epam.opengl.edu.model.geometry.NormalizedPoint
+import com.epam.opengl.edu.model.geometry.Offset
+import com.epam.opengl.edu.model.geometry.Point
+import com.epam.opengl.edu.model.geometry.Rect
+import com.epam.opengl.edu.model.geometry.Size
+import com.epam.opengl.edu.model.geometry.height
+import com.epam.opengl.edu.model.geometry.isOnBottomEdgeOf
+import com.epam.opengl.edu.model.geometry.isOnLeftEdgeOf
+import com.epam.opengl.edu.model.geometry.isOnRightEdgeOf
+import com.epam.opengl.edu.model.geometry.isOnTopEdgeOf
+import com.epam.opengl.edu.model.geometry.moveBottomEdgeWithinBounds
+import com.epam.opengl.edu.model.geometry.moveLeftEdgeWithinBounds
+import com.epam.opengl.edu.model.geometry.moveRightEdgeWithinBounds
+import com.epam.opengl.edu.model.geometry.moveTopEdgeWithinBounds
+import com.epam.opengl.edu.model.geometry.offsetByWithinBounds
+import com.epam.opengl.edu.model.geometry.plus
+import com.epam.opengl.edu.model.geometry.size
+import com.epam.opengl.edu.model.geometry.width
+import com.epam.opengl.edu.model.geometry.x
+import com.epam.opengl.edu.model.geometry.y
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
-class TouchHelper(
+/**
+ * Represents editor view scene
+ */
+class Scene(
     /**
      * Viewport size
      */
-    val viewport: Size = Size(0, 0),
+    val viewport: Size,
     /**
      * Current texture size, can't exceed [viewport] size
      */
@@ -40,7 +43,7 @@ class TouchHelper(
      * we need to calculate offset in coordinate system of the original texture
      */
     val cropOriginOffset: Offset = Offset(0, 0),
-) {
+) : Transformation {
 
     init {
         require(texture.width <= viewport.width && texture.height <= viewport.height) {
@@ -176,74 +179,72 @@ class TouchHelper(
 
 }
 
-fun TouchHelper.onReset() = TouchHelper(viewport = viewport)
-
-fun TouchHelper.onCropped(): TouchHelper = TouchHelper(
+fun Scene.onCropped(): Scene = Scene(
     viewport = viewport,
     texture = croppedTextureSize,
     cropOriginOffset = cropOriginOffset + consumedTextureOffset
 )
 
 /**
- * Texture size given current [TouchHelper.selection] and [TouchHelper.viewport]
+ * Texture size given current [Scene.selection] and [Scene.viewport]
  */
-inline val TouchHelper.croppedTextureSize: Size
+inline val Scene.croppedTextureSize: Size
     // new width = width * (selection.width / viewportWidth)
     get() = Size(
         (texture.width * (selection.size.width.toFloat() / viewport.width)).roundToInt(),
         (texture.height * (selection.size.height.toFloat() / viewport.height)).roundToInt()
     )
 
-private inline val TouchHelper.consumedTextureOffset: Offset
+private inline val Scene.consumedTextureOffset: Offset
     get() = Offset(
         x = (selection.topLeft.x * texture.width.toFloat() / viewport.width).roundToInt(),
         y = (selection.topLeft.y * texture.height.toFloat() / viewport.height).roundToInt()
     )
 
-val TouchHelper.ratio: Float
+val Scene.ratio: Float
     get() = viewport.width.toFloat() / viewport.height
 
-context (TouchHelper)
+context (Scene)
         @Suppress("NOTHING_TO_INLINE")
         inline fun Point.toNormalized(): NormalizedPoint =
-    NormalizedPoint(
+    NormalizedPoint.safeOf(
         // Puts x in range [0 .. 1f]
         x = x * (texture.width.toFloat() / viewport.width) / viewport.width.toFloat(),
         // Puts y in range [0 .. 1f]
         y = y * (texture.height.toFloat() / viewport.height) / viewport.height.toFloat()
     )
 
-inline val TouchHelper.maxOffsetDistanceXPointsBeforeEdgeVisible: Float
+inline val Scene.maxOffsetDistanceXPointsBeforeEdgeVisible: Float
     get() = 1 - ratio + (2 * ratio - 2 * ratio / zoom) / 2
 
-inline val TouchHelper.maxOffsetDistanceYPointsBeforeEdgeVisible: Float
+inline val Scene.maxOffsetDistanceYPointsBeforeEdgeVisible: Float
     get() = (2f - 2f / zoom) / 2f
 
-inline val TouchHelper.maxOffsetDistanceYBeforeEdgeVisiblePx: Float
+inline val Scene.maxOffsetDistanceYBeforeEdgeVisiblePx: Float
     get() = maxOffsetDistanceYPointsBeforeEdgeVisible * viewport.height
 
-inline val TouchHelper.maxOffsetDistanceBeforeEdgeVisiblePx: Float
+inline val Scene.maxOffsetDistanceBeforeEdgeVisiblePx: Float
     get() = maxOffsetDistanceXPointsBeforeEdgeVisible * viewport.width
 
-inline val TouchHelper.textureOffsetXPoints: Float
+inline val Scene.textureOffsetXPoints: Float
     get() = maxOffsetDistanceXPointsBeforeEdgeVisible * -textureOffset.x / (maxOffsetDistanceBeforeEdgeVisiblePx.takeIf { it != 0f }
         ?: viewport.width.toFloat())
 
-inline val TouchHelper.consumedOffsetXPoints: Float
+inline val Scene.consumedOffsetXPoints: Float
     get() = maxOffsetDistanceXPointsBeforeEdgeVisible + textureOffsetXPoints
 
-inline val TouchHelper.textureOffsetYPoints: Float
+inline val Scene.textureOffsetYPoints: Float
     get() = maxOffsetDistanceYPointsBeforeEdgeVisible * -textureOffset.y / (maxOffsetDistanceYBeforeEdgeVisiblePx.takeIf { it != 0f }
         ?: viewport.height.toFloat())
 
-inline val TouchHelper.consumedOffsetYPoints: Float
+inline val Scene.consumedOffsetYPoints: Float
     get() = maxOffsetDistanceYPointsBeforeEdgeVisible + textureOffsetYPoints
 
 /**
  * Formula x = (viewport * (consumed_window_points + maxOffsetDistanceXPointsBeforeEdgeVisible + textureOffsetXPoints)) / 2
  * Formula y = (viewport * (consumed_window_points + maxOffsetDistanceYPointsBeforeEdgeVisible + textureOffsetYPoints)) / 2
  */
-context (TouchHelper)
+context (Scene)
         private fun MotionEvent.toTexturePoint(): Point =
     Point(
         x = toTextureCoordinatesPx(consumedOffsetXPoints + consumedPointsX(x), viewport.width),
@@ -256,7 +257,7 @@ context (TouchHelper)
  *
  * Formula - consumedPoints = ((x / screen_viewport_width) * 2 * ratio) / zoom
  */
-private fun TouchHelper.consumedPointsX(viewportX: Float): Float = 2 * ratio * (viewportX / viewport.width) / zoom
+private fun Scene.consumedPointsX(viewportX: Float): Float = 2 * ratio * (viewportX / viewport.width) / zoom
 
 /**
  * Returns how many points were consumed by viewport when y coordinate is [viewportY]
@@ -266,7 +267,7 @@ private fun TouchHelper.consumedPointsX(viewportX: Float): Float = 2 * ratio * (
  *
  * viewport.height - viewportY - inverted y coordinate
  */
-private fun TouchHelper.consumedPointsY(viewportY: Float): Float =
+private fun Scene.consumedPointsY(viewportY: Float): Float =
     2 * (viewportY / viewport.height) / zoom
 
 /**

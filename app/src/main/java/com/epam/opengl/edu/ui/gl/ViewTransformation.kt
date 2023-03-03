@@ -6,14 +6,14 @@ import com.epam.opengl.edu.R
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
 
-class MatrixTransformation(
+class ViewTransformation(
     private val context: Context,
     private val verticesCoordinates: FloatBuffer,
     private val textureCoordinates: FloatBuffer,
 ) {
 
     context (GL)
-    private val program by lazy {
+            private val program by lazy {
         context.loadProgram(R.raw.projection_vertex, R.raw.frag_normal)
     }
 

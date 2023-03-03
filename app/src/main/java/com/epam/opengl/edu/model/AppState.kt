@@ -2,26 +2,21 @@ package com.epam.opengl.edu.model
 
 import android.net.Uri
 import androidx.compose.runtime.Stable
+import com.epam.opengl.edu.model.geometry.Size
 
 @Stable
-data class AppState(
-    val editMenu: EditMenu = EditMenu(),
-    val image: Uri? = null,
+@JvmInline
+value class AppState(
+    val editMenu: EditMenu? = null,
 )
 
 fun AppState.withEditMenu(
-    menu: EditMenu,
-) = copy(editMenu = menu)
+    modify: EditMenu.() -> EditMenu,
+) = AppState(editMenu = requireNotNull(editMenu) { "Can't update app state, image wasn't loaded" }.run(modify))
 
-fun AppState.withEditMenu(
-    modify: EditMenu.() -> EditMenu
-) = copy(editMenu = editMenu.run(modify))
-
-fun AppState.withImage(
-    image: Uri?,
-) = copy(
-    image = image,
-    editMenu = EditMenu()
-)
+fun AppState.onImageOrViewportUpdated(
+    image: Uri,
+    viewport: Size,
+): AppState = AppState(editMenu = editMenu.updateViewportAndImageOrCreate(image, viewport))
 
 

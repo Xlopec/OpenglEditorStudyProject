@@ -1,13 +1,19 @@
 package com.epam.opengl.edu.model
 
-import com.epam.opengl.edu.ui.gl.TouchHelper
+import android.net.Uri
+import com.epam.opengl.edu.model.geometry.Size
+import com.epam.opengl.edu.model.transformation.Scene
+import com.epam.opengl.edu.model.transformation.Transformation
+import com.epam.opengl.edu.model.transformation.Transformations
+import com.epam.opengl.edu.model.transformation.onCropped
+import com.epam.opengl.edu.model.transformation.plus
 import kotlin.reflect.KClass
 
 data class EditMenu(
+    val image: Uri,
+    val current: Transformations,
     val state: EditorState = Hidden,
-    val current: Transformations = Transformations(),
     val previous: List<Transformations> = listOf(),
-    val helper: TouchHelper = TouchHelper(),
 )
 
 sealed interface EditorState
@@ -34,7 +40,7 @@ val EditMenu.displayTransformations: Transformations
     }
 
 val EditMenu.displayCropSelection: Boolean
-    get() = state is EditTransformation && state.which == Crop::class
+    get() = state is EditTransformation && state.which == Scene::class
 
 fun EditMenu.undoLastTransformation() =
     if (canUndoTransformations) {
@@ -46,9 +52,32 @@ fun EditMenu.undoLastTransformation() =
         this
     }
 
-fun EditMenu.updateTouchHelper(
-    helper: TouchHelper,
-) = copy(helper = helper)
+fun EditMenu?.updateViewportAndImageOrCreate(
+    newImage: Uri,
+    newViewport: Size,
+): EditMenu = this?.updateViewportAndImage(newImage, newViewport) ?: EditMenu(
+    image = newImage,
+    current = Transformations(scene = Scene(newViewport))
+)
+
+fun EditMenu.updateViewportAndImage(
+    newImage: Uri,
+    newViewport: Size,
+): EditMenu {
+    val updated = if (newImage != image) {
+        copy(image = newImage).updateTransformation(Scene(newViewport))
+    } else {
+        this
+    }
+
+    return if (newImage == image && newViewport != displayTransformations.scene.viewport) {
+        updated.updateTransformation(Scene(newViewport))
+    } else {
+        updated
+    }
+}
+
+fun EditMenu.updateCropped() = updateTransformation(displayTransformations.scene.onCropped())
 
 fun EditMenu.updateTransformation(
     transformation: Transformation,

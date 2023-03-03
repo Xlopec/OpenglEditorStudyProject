@@ -1,4 +1,4 @@
-package com.epam.opengl.edu.ui.gl.geometry
+package com.epam.opengl.edu.model.geometry
 
 @JvmInline
 value class Size private constructor(
@@ -8,7 +8,11 @@ value class Size private constructor(
     constructor(width: Int, height: Int) : this(packInts(width, height))
 
     init {
-        // require(width * height > 0) { "Invalid size: $this" }
+        require(width * height > 0) { "Invalid size: $this" }
+    }
+
+    override fun toString(): String {
+        return "Size(width=$width, height=$height)"
     }
 }
 

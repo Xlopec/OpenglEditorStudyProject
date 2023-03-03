@@ -10,13 +10,14 @@ fun update(
 ): Update<AppState, Command> =
     when (message) {
         is OnEditorMenuToggled -> state.withEditMenu { toggleState() }.noCommand()
-        is OnImageSelected -> state.withImage(message.image).noCommand()
+        is OnViewportAndImageUpdated -> state.onImageOrViewportUpdated(message.image, message.viewport).noCommand()
         is OnTransformationUpdated -> state.withEditMenu { updateTransformation(message.transformation) }.noCommand()
         is OnSwitchedToEditTransformation -> state.withEditMenu { switchToEditTransformationMode(message.which) }.noCommand()
         OnApplyChanges -> state.withEditMenu { applyEditedTransformation() }
-            .command(setOfNotNull((state.editMenu.state as? EditTransformation)?.which?.let(::TransformationApplied)))
+            .command(setOfNotNull((state.editMenu!!.state as? EditTransformation)?.which?.let(::TransformationApplied)))
 
         OnDiscardChanges -> state.withEditMenu { discardEditedTransformation() }.noCommand()
         OnUndoTransformation -> state.withEditMenu { undoLastTransformation() }.noCommand()
-        is OnTouchHelperUpdated -> state.withEditMenu { updateTouchHelper(message.helper) }.noCommand()
+        is OnSceneUpdated -> state.withEditMenu { updateTransformation(message.scene) }.noCommand()
+        OnCropped -> state.withEditMenu { updateCropped() }.noCommand()
     }

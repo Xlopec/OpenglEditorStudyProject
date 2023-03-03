@@ -1,5 +1,6 @@
 package com.epam.opengl.edu.ui
 
+import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -22,6 +23,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.*
+import com.epam.opengl.edu.model.geometry.Size
+import com.epam.opengl.edu.model.transformation.Brightness
+import com.epam.opengl.edu.model.transformation.Contrast
+import com.epam.opengl.edu.model.transformation.GaussianBlur
+import com.epam.opengl.edu.model.transformation.Grayscale
+import com.epam.opengl.edu.model.transformation.Saturation
+import com.epam.opengl.edu.model.transformation.Scene
+import com.epam.opengl.edu.model.transformation.Tint
+import com.epam.opengl.edu.model.transformation.Transformations
 import com.epam.opengl.edu.ui.theme.AppTheme
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -43,7 +53,9 @@ fun EditMenu(
                 if (targetState is Hidden) {
                     EnterTransition.None with slideOutOfContainer(AnimatedContentScope.SlideDirection.Down)
                 } else {
-                    slideIntoContainer(AnimatedContentScope.SlideDirection.Up) with slideOutOfContainer(AnimatedContentScope.SlideDirection.Down)
+                    slideIntoContainer(AnimatedContentScope.SlideDirection.Up) with slideOutOfContainer(
+                        AnimatedContentScope.SlideDirection.Down
+                    )
                 }
             }
         ) { state ->
@@ -102,7 +114,7 @@ private fun EditTransformationMenu(
             handler = handler
         )
 
-        Crop::class -> EditCrop(
+        Scene::class -> EditCrop(
             modifier = editMenuModifier,
             handler = handler
         )
@@ -164,7 +176,7 @@ private fun EditMenuDisplayed(
         IconButton(
             image = Icons.Filled.Crop,
             text = stringResource(R.string.menu_item_crop),
-            onClick = { handler(OnSwitchedToEditTransformation(Crop::class)) }
+            onClick = { handler(OnSwitchedToEditTransformation(Scene::class)) }
         )
     }
 }
@@ -400,7 +412,11 @@ private fun IconButton(
 private fun EditMenuDisplayedPreview() {
     AppTheme {
         EditMenu(
-            menu = EditMenu(state = Displayed),
+            menu = EditMenu(
+                current = Transformations(Scene(Size(10, 10))),
+                image = Uri.EMPTY,
+                state = Displayed
+            ),
             handler = {}
         )
     }
@@ -427,7 +443,17 @@ private fun EditBlurTransformationPreview() {
 private fun EditMenuEditTransformationPreview() {
     AppTheme {
         EditMenu(
-            menu = EditMenu(state = EditTransformation(Grayscale::class, Transformations(Grayscale(0.37f)))),
+            menu = EditMenu(
+                image = Uri.EMPTY,
+                current = Transformations(Scene(Size(10, 10))),
+                state = EditTransformation(
+                    which = Grayscale::class,
+                    edited = Transformations(
+                        scene = Scene(Size(10, 10)),
+                        grayscale = Grayscale(0.37f)
+                    )
+                )
+            ),
             handler = {}
         )
     }
