@@ -68,7 +68,7 @@ class TouchHelper(
         isCropSelectionMode: Boolean,
     ) {
         userInput = Px(toTextureCoordinateX(event.x), toTextureCoordinateY(event.y))
-        val offset = Offset(userInput.x - previousInput.x, previousInput.y - userInput.y)
+        val offset = Offset(userInput.x - previousInput.x, userInput.y - previousInput.y)
 
         println("User input ${userInput.x}, ${userInput.y}")
         println("Offset ${offset.x}, ${offset.y}")
@@ -121,42 +121,34 @@ class TouchHelper(
         event: MotionEvent,
         isCropSelectionMode: Boolean,
         offset: Offset,
-    ) {
+    ) = with(viewport) {
         when (event.action) {
             MotionEvent.ACTION_MOVE -> {
                 when {
-                    isCropSelectionMode && abs(userInput.x - rect.bottomRight.x) <= TolerancePx && userInput.y in rect.topLeft.y..rect.bottomRight.y -> {
-                        rect =
-                            rect.moveRightEdge(userInput.x.coerceIn(rect.topLeft.x + MinSize, viewport.width.toFloat()))
+                    isCropSelectionMode && userInput.isOnRightEdgeOf(rect, TolerancePx) -> {
+                        rect = rect.moveRightEdgeWithinBounds(userInput.x)
                     }
 
-                    isCropSelectionMode && abs(userInput.x - rect.topLeft.x) <= TolerancePx && userInput.y in rect.topLeft.y..rect.bottomRight.y -> {
-                        rect = rect.moveLeftEdge(userInput.x.coerceIn(0f, rect.bottomRight.x - MinSize))
+                    isCropSelectionMode && userInput.isOnLeftEdgeOf(rect, TolerancePx) -> {
+                        rect = rect.moveLeftEdgeWithinBounds(userInput.x)
                     }
 
-                    isCropSelectionMode && abs(userInput.y - rect.topLeft.y) <= TolerancePx && userInput.x in rect.topLeft.x..rect.bottomRight.x -> {
-                        rect = rect.moveTopEdge(userInput.y.coerceIn(0f, rect.bottomRight.y - MinSize))
+                    isCropSelectionMode && userInput.isOnTopEdgeOf(rect, TolerancePx) -> {
+                        rect = rect.moveTopEdgeWithinBounds(userInput.y)
                     }
 
-                    isCropSelectionMode && abs(userInput.y - rect.bottomRight.y) <= TolerancePx && userInput.x in rect.topLeft.x..rect.bottomRight.x -> {
-                        rect = rect.moveBottomEdge(
-                            userInput.y.coerceIn(
-                                rect.topLeft.y + MinSize,
-                                viewport.height.toFloat()
-                            )
-                        )
+                    isCropSelectionMode && userInput.isOnBottomEdgeOf(rect, TolerancePx) -> {
+                        rect = rect.moveBottomEdgeWithinBounds(userInput.y)
                     }
 
                     isCropSelectionMode && userInput in rect -> {
                         // check crop selection won't exceed texture bounds
-                        with(viewport) {
-                            rect = rect.offsetToWithinBounds(
-                                Offset(
-                                    x = rect.topLeft.x + offset.x,
-                                    y = rect.topLeft.y - offset.y
-                                )
+                        rect = rect.offsetToWithinBounds(
+                            Offset(
+                                x = rect.topLeft.x + offset.x,
+                                y = rect.topLeft.y + offset.y
                             )
-                        }
+                        )
                     }
 
                     else -> {
@@ -200,17 +192,19 @@ private inline val TouchHelper.consumedTextureOffset: Offset
 val TouchHelper.ratio: Float
     get() = viewport.width.toFloat() / viewport.height
 
-/** range is [0f .. 1f] */
+/**
+ * Puts [xOnTexture] in range [0f .. 1f]
+ * */
 fun TouchHelper.normalizedX(
     xOnTexture: Float,
 ): Float = xOnTexture * (texture.width.toFloat() / viewport.width) / viewport.width.toFloat()
 
-/** range is [1f - textureHeight / viewportHeight .. 1f] */
+/**
+ * Puts [yOnTexture] in range [0 .. 1f]
+ * */
 fun TouchHelper.normalizedY(
     yOnTexture: Float,
-): Float =
-    1f - texture.height.toFloat() / viewport.height + yOnTexture * (texture.height.toFloat() / viewport.height) / viewport.height.toFloat()
-
+): Float = yOnTexture * (texture.height.toFloat() / viewport.height) / viewport.height.toFloat()
 
 inline val TouchHelper.maxOffsetDistanceXPointsBeforeEdgeVisible: Float
     get() = 1 - ratio + (2 * ratio - 2 * ratio / zoom) / 2
@@ -232,7 +226,7 @@ inline val TouchHelper.consumedOffsetXPoints: Float
     get() = maxOffsetDistanceXPointsBeforeEdgeVisible + textureOffsetXPoints
 
 inline val TouchHelper.textureOffsetYPoints: Float
-    get() = maxOffsetDistanceYPointsBeforeEdgeVisible * textureOffset.y / (maxOffsetDistanceYBeforeEdgeVisiblePx.takeIf { it != 0f }
+    get() = maxOffsetDistanceYPointsBeforeEdgeVisible * -textureOffset.y / (maxOffsetDistanceYBeforeEdgeVisiblePx.takeIf { it != 0f }
         ?: viewport.height.toFloat())
 
 inline val TouchHelper.consumedOffsetYPoints: Float
@@ -255,7 +249,7 @@ private fun TouchHelper.consumedPointsX(viewportX: Float): Float = 2 * ratio * (
  * viewport.height - viewportY - inverted y coordinate
  */
 private fun TouchHelper.consumedPointsY(viewportY: Float): Float =
-    2 * ((viewport.height - viewportY) / viewport.height) / zoom
+    2 * ((/*viewport.height - */viewportY) / viewport.height) / zoom
 
 /**
  * Formula x = (viewport * (consumed_window_points + maxOffsetDistanceXPointsBeforeEdgeVisible + textureOffsetXPoints)) / 2

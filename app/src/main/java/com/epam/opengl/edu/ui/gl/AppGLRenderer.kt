@@ -148,8 +148,8 @@ class AppGLRenderer(
             /* offset = */ 0,
             /* left = */ -ratio / zoom + consumedOffsetX,
             /* right = */ ratio / zoom + consumedOffsetX,
-            /* bottom = */ -1f / zoom + consumedOffsetY,
-            /* top = */ 1f / zoom + consumedOffsetY,
+            /* bottom = */ -1f / zoom - consumedOffsetY,
+            /* top = */ 1f / zoom - consumedOffsetY,
             /* near = */ 3f,
             /* far = */ 7f
         )

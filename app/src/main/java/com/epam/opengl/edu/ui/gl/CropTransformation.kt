@@ -80,9 +80,9 @@ class CropTransformation(
             GLES31.glUniform4f(
                 cropRegionHandle,
                 touchHelper.normalizedX(touchHelper.rect.topLeft.x),
-                touchHelper.normalizedY(touchHelper.rect.topLeft.y),
+                1f - touchHelper.normalizedY(touchHelper.rect.topLeft.y),
                 touchHelper.normalizedX(touchHelper.rect.bottomRight.x),
-                touchHelper.normalizedY(touchHelper.rect.bottomRight.y)
+                1f - touchHelper.normalizedY(touchHelper.rect.bottomRight.y)
             )
         } else {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
@@ -91,7 +91,7 @@ class CropTransformation(
         GLES31.glUniform2f(
             pointerHandle,
             touchHelper.normalizedX(touchHelper.userInput.x),
-            touchHelper.normalizedY(touchHelper.userInput.y)
+            1f - touchHelper.normalizedY(touchHelper.userInput.y)
         )
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
         GLES31.glEnableVertexAttribArray(positionHandle)
