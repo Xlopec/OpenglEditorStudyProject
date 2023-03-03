@@ -1,6 +1,25 @@
 package com.epam.opengl.edu.ui.gl
 
 import android.view.MotionEvent
+import com.epam.opengl.edu.ui.gl.geometry.Offset
+import com.epam.opengl.edu.ui.gl.geometry.Point
+import com.epam.opengl.edu.ui.gl.geometry.Rect
+import com.epam.opengl.edu.ui.gl.geometry.Size
+import com.epam.opengl.edu.ui.gl.geometry.height
+import com.epam.opengl.edu.ui.gl.geometry.isOnBottomEdgeOf
+import com.epam.opengl.edu.ui.gl.geometry.isOnLeftEdgeOf
+import com.epam.opengl.edu.ui.gl.geometry.isOnRightEdgeOf
+import com.epam.opengl.edu.ui.gl.geometry.isOnTopEdgeOf
+import com.epam.opengl.edu.ui.gl.geometry.moveBottomEdgeWithinBounds
+import com.epam.opengl.edu.ui.gl.geometry.moveLeftEdgeWithinBounds
+import com.epam.opengl.edu.ui.gl.geometry.moveRightEdgeWithinBounds
+import com.epam.opengl.edu.ui.gl.geometry.moveTopEdgeWithinBounds
+import com.epam.opengl.edu.ui.gl.geometry.offsetByWithinBounds
+import com.epam.opengl.edu.ui.gl.geometry.plus
+import com.epam.opengl.edu.ui.gl.geometry.size
+import com.epam.opengl.edu.ui.gl.geometry.width
+import com.epam.opengl.edu.ui.gl.geometry.x
+import com.epam.opengl.edu.ui.gl.geometry.y
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -42,21 +61,21 @@ class TouchHelper(
     /**
      * User input in texture coordinate system
      */
-    var userInput = Px()
+    var userInput = Point()
         private set
 
     /**
      * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
      */
     var selection = Rect(
-        topLeft = Px(),
-        bottomRight = Px(viewport.width, viewport.height)
+        topLeft = Point(),
+        bottomRight = Point(viewport.width, viewport.height)
     )
         private set
 
     // fixme problems with zoom
     private var currentSpan = 1f
-    private var previousInput = Px()
+    private var previousInput = Point()
     private var oldSpan = Float.NaN
 
     val zoom: Float
@@ -66,7 +85,7 @@ class TouchHelper(
         event: MotionEvent,
         isCropSelectionMode: Boolean,
     ) {
-        userInput = Px(toTextureCoordinateX(event.x), toTextureCoordinateY(event.y))
+        userInput = Point(toTextureCoordinateX(event.x), toTextureCoordinateY(event.y))
         val offset = Offset(userInput.x - previousInput.x, userInput.y - previousInput.y)
         previousInput = userInput
 
@@ -264,5 +283,5 @@ private fun toTextureCoordinatesPx(
 
 @Suppress("NOTHING_TO_INLINE")
 private inline operator fun Rect.contains(
-    point: Px,
+    point: Point,
 ): Boolean = point.x in topLeft.x..bottomRight.x && point.y in topLeft.y..bottomRight.y

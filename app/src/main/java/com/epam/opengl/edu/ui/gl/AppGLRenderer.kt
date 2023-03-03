@@ -12,6 +12,10 @@ import com.epam.opengl.edu.model.*
 import com.epam.opengl.edu.ui.MessageHandler
 import com.epam.opengl.edu.ui.gl.Textures.Companion.PingTextureIdx
 import com.epam.opengl.edu.ui.gl.Textures.Companion.PongTextureIdx
+import com.epam.opengl.edu.ui.gl.geometry.Size
+import com.epam.opengl.edu.ui.gl.geometry.height
+import com.epam.opengl.edu.ui.gl.geometry.size
+import com.epam.opengl.edu.ui.gl.geometry.width
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer

@@ -6,6 +6,10 @@ import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.OnTouchHelperUpdated
 import com.epam.opengl.edu.model.Transformations
 import com.epam.opengl.edu.ui.MessageHandler
+import com.epam.opengl.edu.ui.gl.geometry.height
+import com.epam.opengl.edu.ui.gl.geometry.width
+import com.epam.opengl.edu.ui.gl.geometry.x
+import com.epam.opengl.edu.ui.gl.geometry.y
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
 
