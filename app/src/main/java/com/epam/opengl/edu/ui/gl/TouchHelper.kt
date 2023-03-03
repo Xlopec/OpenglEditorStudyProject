@@ -51,32 +51,12 @@ class TouchHelper(
      */
     val cropRect = RectF(0f, 0f, viewport.width.toFloat(), viewport.height.toFloat())
 
-    var currentSpan = 1f
-        private set
+    private var currentSpan = 0f
     private val previousInput = PointF()
     private var oldSpan = Float.NaN
 
     val zoom: Float
         get() = (currentSpan + viewport.width) / viewport.width.toFloat()
-
-    // todo recreate
-    fun reset() {
-        currentSpan = 0f
-        oldSpan = Float.NaN
-        previousInput.set(0f, 0f)
-    }
-
-    // todo recreate
-    /*fun resetCropSelection() {
-        cropRect.set(0f, 0f, viewport.width.toFloat(), viewport.height.toFloat())
-    }*/
-
-    // todo recreate
-    /*fun onTexturesCropped() {
-        cropOriginOffset += consumedTextureOffset
-        texture = croppedTextureSize
-        resetCropSelection()
-    }*/
 
     fun onTouch(
         event: MotionEvent,
@@ -174,6 +154,8 @@ class TouchHelper(
     }
 
 }
+
+fun TouchHelper.onReset() = TouchHelper(viewport = viewport)
 
 fun TouchHelper.onCropped(): TouchHelper = TouchHelper(
     viewport = viewport,

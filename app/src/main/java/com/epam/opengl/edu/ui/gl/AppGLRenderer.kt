@@ -52,7 +52,7 @@ class AppGLRenderer(
                     GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.originalTexture)
                     GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
                     bitmap.recycle()
-                    state.helper.reset()
+                    handler(OnTouchHelperUpdated(state.helper.onReset()))
                     view.requestRender()
                 }
             }
