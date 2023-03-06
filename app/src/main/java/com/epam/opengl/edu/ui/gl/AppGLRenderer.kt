@@ -243,15 +243,14 @@ class AppGLRenderer(
             require(textureIndex == PingTextureIdx || textureIndex == PongTextureIdx) {
                 "incorrect texture index, was $textureIndex"
             }
-            setupFrameBuffer(viewport.width, viewport.height, textures[textureIndex], frameBuffers[frameBufferIndex])
+            setupFrameBuffer(viewport, textures[textureIndex], frameBuffers[frameBufferIndex])
         }
 
-        setupFrameBuffer(viewport.width, viewport.height, textures.cropTexture, frameBuffers.cropFrameBuffer)
+        setupFrameBuffer(viewport, textures.cropTexture, frameBuffers.cropFrameBuffer)
     }
 
     private fun setupFrameBuffer(
-        width: Int,
-        height: Int,
+        size: Size,
         texture: Int,
         frameBuffer: Int,
     ) {
@@ -261,8 +260,8 @@ class AppGLRenderer(
             GLES31.GL_TEXTURE_2D,
             0,
             GLES31.GL_RGBA,
-            width,
-            height,
+            size.width,
+            size.height,
             0,
             GLES31.GL_RGBA,
             GLES31.GL_UNSIGNED_BYTE,
