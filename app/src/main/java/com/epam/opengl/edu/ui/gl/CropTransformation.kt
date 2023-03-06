@@ -25,6 +25,10 @@ class CropTransformation(
     private val textures: Textures,
 ) {
 
+    private companion object {
+        const val RectLineWidthPx = 1
+    }
+
     context (GL)
             private val program by lazy {
         context.loadProgram(R.raw.no_transform_vertex, R.raw.frag_crop)
@@ -74,10 +78,7 @@ class CropTransformation(
         render(fbo) { _, cropRegionHandle, borderWidthHandle ->
             val scene = transformations.scene
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-            GLES31.glUniform1f(
-                borderWidthHandle,
-                2f / scene.viewport.width
-            )
+            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / scene.viewport.width)
 
             with(scene) {
                 val (left, top) = scene.selection.topLeft.toNormalized()
