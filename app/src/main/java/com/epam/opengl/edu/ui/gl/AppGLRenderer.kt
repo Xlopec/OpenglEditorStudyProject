@@ -13,9 +13,10 @@ import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.geometry.height
 import com.epam.opengl.edu.model.geometry.size
 import com.epam.opengl.edu.model.geometry.width
-import com.epam.opengl.edu.model.transformation.ratio
 import com.epam.opengl.edu.model.transformation.textureOffsetXPoints
 import com.epam.opengl.edu.model.transformation.textureOffsetYPoints
+import com.epam.opengl.edu.model.transformation.viewportRatio
+import com.epam.opengl.edu.model.transformation.window
 import com.epam.opengl.edu.ui.gl.Textures.Companion.PingTextureIdx
 import com.epam.opengl.edu.ui.gl.Textures.Companion.PongTextureIdx
 import java.nio.ByteBuffer
@@ -145,11 +146,12 @@ class AppGLRenderer(
         } else {
             cropTransformation.drawNormal(
                 fbo = frameBuffers.cropFrameBuffer,
-                texture = readFromTexture
+                texture = readFromTexture,
+                transformations = transformations
             )
         }
 
-        val ratio = transformations.scene.ratio
+        val ratio = transformations.scene.viewportRatio
         val zoom = transformations.scene.zoom
         val consumedOffsetX = transformations.scene.textureOffsetXPoints
         val consumedOffsetY = transformations.scene.textureOffsetYPoints
@@ -194,6 +196,7 @@ class AppGLRenderer(
         width: Int,
         height: Int,
     ) {
+        println("Surface $width - $height")
         onViewportChange(Size(width, height))
     }
 
@@ -210,7 +213,7 @@ class AppGLRenderer(
         viewport: Size,
         image: Uri,
     ) {
-        GLES31.glViewport(0, 0, viewport.width, viewport.height)
+        GLES31.glViewport(0, 0, window.width, window.height)
         GLES31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
         GLES31.glEnable(GLES31.GL_BLEND)
         GLES31.glBlendFunc(GLES31.GL_SRC_ALPHA, GLES31.GL_ONE_MINUS_SRC_ALPHA)
@@ -243,10 +246,10 @@ class AppGLRenderer(
             require(textureIndex == PingTextureIdx || textureIndex == PongTextureIdx) {
                 "incorrect texture index, was $textureIndex"
             }
-            setupFrameBuffer(viewport, textures[textureIndex], frameBuffers[frameBufferIndex])
+            setupFrameBuffer(window, textures[textureIndex], frameBuffers[frameBufferIndex])
         }
 
-        setupFrameBuffer(viewport, textures.cropTexture, frameBuffers.cropFrameBuffer)
+        setupFrameBuffer(window, textures.cropTexture, frameBuffers.cropFrameBuffer)
     }
 
     private fun setupFrameBuffer(

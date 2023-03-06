@@ -2,6 +2,8 @@ package com.epam.opengl.edu.model
 
 import android.net.Uri
 import com.epam.opengl.edu.model.geometry.Size
+import com.epam.opengl.edu.model.geometry.height
+import com.epam.opengl.edu.model.geometry.width
 import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.model.transformation.Transformation
 import com.epam.opengl.edu.model.transformation.Transformations
@@ -52,12 +54,17 @@ fun EditMenu.undoLastTransformation() =
         this
     }
 
+val hardcodeTexture = Size(960, 1280)
+
+val hardcodeRatio: Float
+    get() = hardcodeTexture.width.toFloat() / hardcodeTexture.height
+
 fun EditMenu?.updateViewportAndImageOrCreate(
     newImage: Uri,
     newViewport: Size,
-): EditMenu = this?.updateViewportAndImage(newImage, newViewport) ?: EditMenu(
+): EditMenu = this?.updateViewportAndImage(newImage, /*newViewport*/hardcodeTexture) ?: EditMenu(
     image = newImage,
-    current = Transformations(scene = Scene(newViewport))
+    current = Transformations(scene = Scene(/*newViewport*/hardcodeTexture))
 )
 
 fun EditMenu.updateViewportAndImage(

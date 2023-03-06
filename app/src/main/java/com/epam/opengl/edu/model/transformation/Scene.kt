@@ -90,6 +90,7 @@ class Scene(
         isCropSelectionMode: Boolean,
     ) {
         userInput = event.toTexturePoint()
+        println("Input $userInput")
         val offset = Offset(userInput.x - previousInput.x, userInput.y - previousInput.y)
         previousInput = userInput
 
@@ -181,14 +182,14 @@ class Scene(
 
 fun Scene.onCropped(): Scene = Scene(
     viewport = viewport,
-    texture = croppedTextureSize,
+    texture = croppedTextureSizeInViewportPerspective,
     cropOriginOffset = cropOriginOffset + consumedTextureOffset
 )
 
 /**
  * Texture size given current [Scene.selection] and [Scene.viewport]
  */
-inline val Scene.croppedTextureSize: Size
+inline val Scene.croppedTextureSizeInViewportPerspective: Size
     // new width = width * (selection.width / viewportWidth)
     get() = Size(
         (texture.width * (selection.size.width.toFloat() / viewport.width)).roundToInt(),
@@ -201,7 +202,10 @@ private inline val Scene.consumedTextureOffset: Offset
         y = (selection.topLeft.y * texture.height.toFloat() / viewport.height).roundToInt()
     )
 
-val Scene.ratio: Float
+val Scene.textureRatio: Float
+    get() = texture.width.toFloat() / texture.height
+
+val Scene.viewportRatio: Float
     get() = viewport.width.toFloat() / viewport.height
 
 context (Scene)
@@ -214,8 +218,9 @@ context (Scene)
         y = y * (texture.height.toFloat() / viewport.height) / viewport.height.toFloat()
     )
 
+
 inline val Scene.maxOffsetDistanceXPointsBeforeEdgeVisible: Float
-    get() = 1 - ratio + (2 * ratio - 2 * ratio / zoom) / 2
+    get() = 1 - viewportRatio + (2 * viewportRatio - 2 * viewportRatio / zoom) / 2
 
 inline val Scene.maxOffsetDistanceYPointsBeforeEdgeVisible: Float
     get() = (2f - 2f / zoom) / 2f
@@ -247,9 +252,16 @@ inline val Scene.consumedOffsetYPoints: Float
 context (Scene)
         private fun MotionEvent.toTexturePoint(): Point =
     Point(
-        x = toTextureCoordinatesPx(consumedOffsetXPoints + consumedPointsX(x), viewport.width),
-        y = toTextureCoordinatesPx(consumedOffsetYPoints + consumedPointsY(y), viewport.height)
+        x = (toTextureCoordinatesPx(consumedOffsetXPoints + consumedPointsX(x), viewport.width)).roundToInt(),
+        y = (toTextureCoordinatesPx(consumedOffsetYPoints + consumedPointsY(y), viewport.height)).roundToInt()
     )
+
+val window = Size(
+    width = 1080,
+    height = 1584 //2054
+)
+
+val windowRatio get() = window.width.toFloat() / window.height.toFloat()
 
 /**
  * Returns how many points were consumed by viewport when x coordinate is [viewportX]
@@ -257,18 +269,16 @@ context (Scene)
  *
  * Formula - consumedPoints = ((x / screen_viewport_width) * 2 * ratio) / zoom
  */
-private fun Scene.consumedPointsX(viewportX: Float): Float = 2 * ratio * (viewportX / viewport.width) / zoom
+private fun Scene.consumedPointsX(viewportX: Float): Float = 2 * viewportRatio * (viewportX / window.width) / zoom
 
 /**
  * Returns how many points were consumed by viewport when y coordinate is [viewportY]
  * Return value in range 0..2
  *
  * Formula - consumedPoints = ((y / screen_viewport_width) * 2) / zoom
- *
- * viewport.height - viewportY - inverted y coordinate
- */
+ **/
 private fun Scene.consumedPointsY(viewportY: Float): Float =
-    2 * (viewportY / viewport.height) / zoom
+    2 * (viewportY / window.height) / zoom
 
 /**
  * Converts [point] in range -1..1 to texture coordinates in pixels in range [0..viewport]
@@ -276,7 +286,7 @@ private fun Scene.consumedPointsY(viewportY: Float): Float =
 private fun toTextureCoordinatesPx(
     point: Float,
     viewport: Int,
-): Int = (viewport * point / 2).roundToInt()
+): Float = (viewport * point / 2)//.roundToInt()
 
 @Suppress("NOTHING_TO_INLINE")
 private inline operator fun Rect.contains(

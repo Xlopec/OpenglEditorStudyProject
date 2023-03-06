@@ -10,7 +10,7 @@ import com.epam.opengl.edu.model.geometry.width
 import com.epam.opengl.edu.model.geometry.x
 import com.epam.opengl.edu.model.geometry.y
 import com.epam.opengl.edu.model.transformation.Transformations
-import com.epam.opengl.edu.model.transformation.croppedTextureSize
+import com.epam.opengl.edu.model.transformation.croppedTextureSizeInViewportPerspective
 import com.epam.opengl.edu.model.transformation.toNormalized
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
@@ -26,7 +26,7 @@ class CropTransformation(
 ) {
 
     private companion object {
-        const val RectLineWidthPx = 1
+        const val RectLineWidthPx = 2
     }
 
     context (GL)
@@ -40,9 +40,9 @@ class CropTransformation(
         fbo: Int,
         texture: Int,
     ) {
-        render(fbo) { offsetHandle, cropRegionHandle, _ ->
+        render(fbo) { offsetHandle, cropRegionHandle, _, _ ->
             val scene = transformations.scene
-            val croppedTextureSize = scene.croppedTextureSize
+            val croppedTextureSize = scene.croppedTextureSizeInViewportPerspective
             // resize texture bound to this framebuffer
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.cropTexture)
             GLES31.glTexImage2D(
@@ -58,6 +58,7 @@ class CropTransformation(
             )
 
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
+            GLES31.glUniform4f(cropRegionHandle, 0f, 0f, 0f, 0f)
             GLES31.glUniform2f(
                 offsetHandle,
                 // plus origin offset since we're working with original texture!
@@ -65,7 +66,6 @@ class CropTransformation(
                 // invert sign since origin for Y is bottom
                 -(scene.cropOriginOffset.y + scene.selection.topLeft.y * (scene.texture.height.toFloat() / scene.viewport.height)) / scene.viewport.height
             )
-            GLES31.glUniform4f(cropRegionHandle, 0f, 0f, 0f, 0f)
         }
     }
 
@@ -75,7 +75,7 @@ class CropTransformation(
         fbo: Int,
         texture: Int,
     ) {
-        render(fbo) { _, cropRegionHandle, borderWidthHandle ->
+        render(fbo) { _, cropRegionHandle, borderWidthHandle, pointerHandle ->
             val scene = transformations.scene
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
             GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / scene.viewport.width)
@@ -83,8 +83,10 @@ class CropTransformation(
             with(scene) {
                 val (left, top) = scene.selection.topLeft.toNormalized()
                 val (right, bottom) = scene.selection.bottomRight.toNormalized()
+                val pointer = scene.userInput.toNormalized()
                 // Coordinate origin is bottom left!
                 GLES31.glUniform4f(cropRegionHandle, left, 1f - top, right, 1f - bottom)
+                GLES31.glUniform2f(pointerHandle, pointer.x, 1f - pointer.y)
             }
         }
     }
@@ -93,11 +95,15 @@ class CropTransformation(
     fun drawNormal(
         fbo: Int,
         texture: Int,
+        transformations: Transformations,
     ) {
 
-        render(fbo) { _, cropRegionHandle, _ ->
+        render(fbo) { _, cropRegionHandle, borderWidthHandle, pointerHandle ->
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
+            val pointer = with(transformations.scene) { userInput.toNormalized() }
+            GLES31.glUniform2f(pointerHandle, pointer.x, 1f - pointer.y)
             GLES31.glUniform4f(cropRegionHandle, 0f, 0f, 0f, 0f)
+            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / transformations.scene.viewport.width)
         }
     }
 
@@ -105,7 +111,7 @@ class CropTransformation(
             @OptIn(ExperimentalContracts::class)
             private /*inline*/ fun render(
         fbo: Int,
-        strategy: (offsetHandle: Int, cropRegionHandle: Int, borderWidthHandle: Int) -> Unit,
+        strategy: (offsetHandle: Int, cropRegionHandle: Int, borderWidthHandle: Int, pointerHandle: Int) -> Unit,
     ) {
         contract {
             callsInPlace(strategy, InvocationKind.EXACTLY_ONCE)
@@ -116,6 +122,7 @@ class CropTransformation(
 
         val positionHandle = GLES31.glGetAttribLocation(program, "aPosition")
         val texturePositionHandle = GLES31.glGetAttribLocation(program, "aTexPosition")
+        val pointerHandle = GLES31.glGetUniformLocation(program, "pointer")
         val offsetHandle = GLES31.glGetUniformLocation(program, "offset")
         val cropRegionHandle = GLES31.glGetUniformLocation(program, "cropRegion")
         val borderWidthHandle = GLES31.glGetUniformLocation(program, "borderWidth")
@@ -123,7 +130,7 @@ class CropTransformation(
         GLES31.glVertexAttribPointer(texturePositionHandle, 2, GLES31.GL_FLOAT, false, 0, textureCoordinates)
         GLES31.glEnableVertexAttribArray(texturePositionHandle)
 
-        strategy(offsetHandle, cropRegionHandle, borderWidthHandle)
+        strategy(offsetHandle, cropRegionHandle, borderWidthHandle, pointerHandle)
 
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
         GLES31.glEnableVertexAttribArray(positionHandle)
