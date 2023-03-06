@@ -6,7 +6,6 @@ uniform vec2 offset;
 // top left; bottom right (x, y)
 uniform vec4 cropRegion;
 uniform float borderWidth;
-uniform vec2 pointer;
 in vec2 vTexPosition;
 out vec4 outColor;
 
@@ -22,16 +21,20 @@ bool vertical(const vec2 point, const vec4 region) {
     return (abs(vTexPosition.x - cropRegion.x) <= borderWidth || abs(vTexPosition.x - cropRegion.z) <= borderWidth) && inside(vTexPosition.y, cropRegion.y, cropRegion.w);
 }
 
+bool drawSelectionRect() {
+    return cropRegion.x != 0.0f || cropRegion.y != 0.0f || cropRegion.z != 0.0f || cropRegion.w != 0.0f;
+}
+
 const vec4 cropRegionColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
 void main()
 {
-    if (inside(vTexPosition.x, pointer.x - borderWidth, pointer.x + borderWidth) && inside(vTexPosition.y, pointer.y - borderWidth, pointer.y + borderWidth))
+    if (drawSelectionRect() && (horizontal(vTexPosition, cropRegion) || vertical(vTexPosition, cropRegion)))
     {
-        outColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);
-    } else if (/*inside(vTexPosition.x, cropRegion.x, cropRegion.z) && inside(vTexPosition.y, cropRegion.y, cropRegion.w)*/horizontal(vTexPosition, cropRegion) || vertical(vTexPosition, cropRegion)) {
         outColor = cropRegionColor;
-    } else {
+    }
+    else
+    {
         outColor = texture(uTexture, vTexPosition + offset);
     }
 }

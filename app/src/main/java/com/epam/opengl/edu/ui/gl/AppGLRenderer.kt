@@ -43,6 +43,7 @@ class AppGLRenderer(
             val viewportChanged =
                 value != null && value.displayTransformations.scene.viewport != old?.displayTransformations?.scene?.viewport
             val transformationsChanged = value?.displayTransformations != old?.displayTransformations
+            val cropSelectionChanged = value?.displayCropSelection != old?.displayCropSelection
 
             if (viewportChanged) {
                 view.queueEvent {
@@ -54,7 +55,7 @@ class AppGLRenderer(
                 }
             }
 
-            if (imageChanged || transformationsChanged || viewportChanged) {
+            if (imageChanged || transformationsChanged || viewportChanged || cropSelectionChanged) {
                 view.requestRender()
             }
         }
@@ -93,11 +94,11 @@ class AppGLRenderer(
     private val viewMatrix = FloatArray(16)
     private val viewTransformation = ViewTransformation(context, verticesBuffer, textureBuffer)
     private val cropTransformation = CropTransformation(context, verticesBuffer, textureBuffer, textures)
-
     @Volatile
     private var cropRequested = false
 
     fun requestCrop() {
+        require(!cropRequested) { "Requesting crop during cropping might lead to state inconsistency bugs" }
         cropRequested = true
         view.requestRender()
     }
