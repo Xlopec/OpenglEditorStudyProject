@@ -64,6 +64,7 @@ import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.isDisplayed
 import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.ui.gl.AppGLRenderer
+import com.epam.opengl.edu.ui.gl.asBitmap
 import com.epam.opengl.edu.ui.theme.AppTheme
 import io.github.xlopec.tea.core.Initial
 import io.github.xlopec.tea.core.Snapshot
@@ -86,13 +87,19 @@ fun App(
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var viewportSize by remember { mutableStateOf<Size?>(null) }
     val state = snapshot.currentState
+    val context = LocalContext.current
 
     LaunchedEffect(selectedUri?.toString(), viewportSize) {
         val image = selectedUri
         val viewport = viewportSize
 
         if (image != null && viewport != null) {
-            handler(OnViewportAndImageUpdated(image, viewport))
+            // fixme later
+            val b = with(context) { image.asBitmap() }
+            val size = Size(b.width, b.height)
+            b.recycle()
+
+            handler(OnViewportAndImageUpdated(image, size))
         }
     }
 

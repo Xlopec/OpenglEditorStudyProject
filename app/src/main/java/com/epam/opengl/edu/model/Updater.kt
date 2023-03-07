@@ -10,7 +10,7 @@ fun update(
 ): Update<AppState, Command> =
     when (message) {
         is OnEditorMenuToggled -> state.withEditMenu { toggleState() }.noCommand()
-        is OnViewportAndImageUpdated -> state.onImageOrViewportUpdated(message.image, message.viewport).noCommand()
+        is OnViewportAndImageUpdated -> state.onImageOrViewportUpdated(message.image, message.imageSize).noCommand()
         is OnTransformationUpdated -> state.withEditMenu { updateTransformation(message.transformation) }.noCommand()
         is OnSwitchedToEditTransformation -> state.withEditMenu { switchToEditTransformationMode(message.which) }.noCommand()
         OnApplyChanges -> state.withEditMenu { applyEditedTransformation() }
