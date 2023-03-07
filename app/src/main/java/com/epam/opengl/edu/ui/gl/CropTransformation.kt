@@ -1,8 +1,11 @@
 package com.epam.opengl.edu.ui.gl
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.opengl.GLES31
+import android.opengl.GLUtils
 import com.epam.opengl.edu.R
+import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.geometry.component1
 import com.epam.opengl.edu.model.geometry.component2
 import com.epam.opengl.edu.model.geometry.height
@@ -10,13 +13,16 @@ import com.epam.opengl.edu.model.geometry.width
 import com.epam.opengl.edu.model.geometry.x
 import com.epam.opengl.edu.model.geometry.y
 import com.epam.opengl.edu.model.transformation.Transformations
-import com.epam.opengl.edu.model.transformation.croppedTextureSizeInViewportPerspective
 import com.epam.opengl.edu.model.transformation.toNormalized
+import com.epam.opengl.edu.model.transformation.window
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
+import kotlin.math.roundToInt
 
 class CropTransformation(
     private val context: Context,
@@ -40,33 +46,98 @@ class CropTransformation(
         fbo: Int,
         texture: Int,
     ) {
+        println("Do crop")
+        val scene = transformations.scene
+        val croppedTextureSize =
+            Size(scene.viewport.width, scene.viewport.height)// scene.croppedTextureSizeInViewportPerspective
         render(fbo) { offsetHandle, cropRegionHandle, _, _ ->
-            val scene = transformations.scene
-            val croppedTextureSize = scene.croppedTextureSizeInViewportPerspective
+
             // resize texture bound to this framebuffer
-            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.cropTexture)
+            /*GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.cropTexture)
             GLES31.glTexImage2D(
                 GLES31.GL_TEXTURE_2D,
                 0,
                 GLES31.GL_RGBA,
-                croppedTextureSize.width,
-                croppedTextureSize.height,
+                (window.width),// * (croppedTextureSize.width.toFloat() / scene.viewport.width.toFloat())).roundToInt(),
+                window.height,
                 0,
                 GLES31.GL_RGBA,
                 GLES31.GL_UNSIGNED_BYTE,
                 null
-            )
+            )*/
 
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
             GLES31.glUniform4f(cropRegionHandle, 0f, 0f, 0f, 0f)
             GLES31.glUniform2f(
                 offsetHandle,
                 // plus origin offset since we're working with original texture!
-                (scene.cropOriginOffset.x + scene.selection.topLeft.x * (scene.texture.width.toFloat() / scene.viewport.width)) / scene.viewport.width.toFloat(),
+                0f,//(scene.cropOriginOffset.x + scene.selection.topLeft.x * (scene.texture.width.toFloat() / scene.viewport.width)) / scene.viewport.width.toFloat(),
                 // invert sign since origin for Y is bottom
-                -(scene.cropOriginOffset.y + scene.selection.topLeft.y * (scene.texture.height.toFloat() / scene.viewport.height)) / scene.viewport.height
+                0f// -(scene.cropOriginOffset.y + scene.selection.topLeft.y * (scene.texture.height.toFloat() / scene.viewport.height)) / scene.viewport.height
             )
         }
+        //
+
+
+        val rawOffset = 307
+        val offsetLeftX = (rawOffset * window.width / scene.viewport.width.toFloat()).roundToInt()
+
+        val buffer = ByteBuffer.allocateDirect((window.width - offsetLeftX) * window.height * 4)
+            .order(ByteOrder.nativeOrder()).position(0)
+
+
+        GLES31.glReadPixels(
+            offsetLeftX,
+            0,
+            window.width - offsetLeftX,
+            window.height,
+            GLES31.GL_RGBA,
+            GLES31.GL_UNSIGNED_BYTE,
+            buffer
+        )
+        val bitmap = Bitmap.createBitmap(window.width - offsetLeftX, window.height, Bitmap.Config.ARGB_8888)
+        bitmap.copyPixelsFromBuffer(buffer)
+
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.originalTexture)
+
+        GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
+        /*GLES31.glTexImage2D(
+            GLES31.GL_TEXTURE_2D,
+            0,
+            GLES31.GL_RGBA,
+            croppedTextureSize.width,
+            croppedTextureSize.height,
+            0,
+            GLES31.GL_RGBA,
+            GLES31.GL_UNSIGNED_BYTE,
+            buffer
+        )*/
+
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.cropTexture)
+        GLES31.glTexImage2D(
+            GLES31.GL_TEXTURE_2D,
+            0,
+            GLES31.GL_RGBA,
+            window.width,
+            window.height,
+            0,
+            GLES31.GL_RGBA,
+            GLES31.GL_UNSIGNED_BYTE,
+            null
+        )
+
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
+        val offsetHandle = GLES31.glGetUniformLocation(program, "offset")
+
+        GLES31.glUniform2f(
+            offsetHandle,
+            // plus origin offset since we're working with original texture!
+            0f,
+            // invert sign since origin for Y is bottom
+            0f
+        )
+
+        bitmap.recycle()
     }
 
     context (GL)
