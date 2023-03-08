@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.opengl.GLES31
 import android.opengl.GLUtils
 import com.epam.opengl.edu.R
-import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.geometry.component1
 import com.epam.opengl.edu.model.geometry.component2
 import com.epam.opengl.edu.model.geometry.height
@@ -13,6 +12,7 @@ import com.epam.opengl.edu.model.geometry.width
 import com.epam.opengl.edu.model.geometry.x
 import com.epam.opengl.edu.model.geometry.y
 import com.epam.opengl.edu.model.transformation.Transformations
+import com.epam.opengl.edu.model.transformation.croppedTextureSize
 import com.epam.opengl.edu.model.transformation.toNormalized
 import com.epam.opengl.edu.model.transformation.window
 import java.nio.ByteBuffer
@@ -48,8 +48,7 @@ class CropTransformation(
     ) {
         println("Do crop")
         val scene = transformations.scene
-        val croppedTextureSize =
-            Size(scene.viewport.width, scene.viewport.height)// scene.croppedTextureSizeInViewportPerspective
+        val croppedTextureSize = scene.croppedTextureSize
         render(fbo) { offsetHandle, cropRegionHandle, _, _ ->
 
             // resize texture bound to this framebuffer
@@ -79,23 +78,30 @@ class CropTransformation(
         //
 
 
-        val rawOffset = 307
-        val offsetLeftX = (rawOffset * window.width / scene.viewport.width.toFloat()).roundToInt()
+        val rawOffsetLeft = scene.selection.topLeft.x
+        val rawOffsetRight = scene.viewport.width - scene.selection.bottomRight.x
 
-        val buffer = ByteBuffer.allocateDirect((window.width - offsetLeftX) * window.height * 4)
-            .order(ByteOrder.nativeOrder()).position(0)
+        val w2vRatio = window.width / scene.viewport.width.toFloat()
+
+        val offsetLeftX = (rawOffsetLeft * w2vRatio).roundToInt()
+        val offsetRightX = (rawOffsetRight * w2vRatio).roundToInt()
+        val newWindowWidth = window.width - offsetLeftX - offsetRightX
+
+        val buffer = ByteBuffer.allocateDirect(newWindowWidth * window.height * 4)
+            .order(ByteOrder.nativeOrder())
+            .position(0)
 
 
         GLES31.glReadPixels(
             offsetLeftX,
             0,
-            window.width - offsetLeftX,
+            newWindowWidth,
             window.height,
             GLES31.GL_RGBA,
             GLES31.GL_UNSIGNED_BYTE,
             buffer
         )
-        val bitmap = Bitmap.createBitmap(window.width - offsetLeftX, window.height, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(newWindowWidth, window.height, Bitmap.Config.ARGB_8888)
         bitmap.copyPixelsFromBuffer(buffer)
 
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.originalTexture)
