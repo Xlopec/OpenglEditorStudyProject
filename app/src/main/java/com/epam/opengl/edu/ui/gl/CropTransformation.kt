@@ -12,7 +12,6 @@ import com.epam.opengl.edu.model.geometry.width
 import com.epam.opengl.edu.model.geometry.x
 import com.epam.opengl.edu.model.geometry.y
 import com.epam.opengl.edu.model.transformation.Transformations
-import com.epam.opengl.edu.model.transformation.croppedTextureSize
 import com.epam.opengl.edu.model.transformation.toNormalized
 import com.epam.opengl.edu.model.transformation.window
 import java.nio.ByteBuffer
@@ -46,9 +45,7 @@ class CropTransformation(
         fbo: Int,
         texture: Int,
     ) {
-        println("Do crop")
         val scene = transformations.scene
-        val croppedTextureSize = scene.croppedTextureSize
         render(fbo) { offsetHandle, cropRegionHandle, _, _ ->
 
             // resize texture bound to this framebuffer
@@ -75,33 +72,36 @@ class CropTransformation(
                 0f// -(scene.cropOriginOffset.y + scene.selection.topLeft.y * (scene.texture.height.toFloat() / scene.viewport.height)) / scene.viewport.height
             )
         }
-        //
-
-
         val rawOffsetLeft = scene.selection.topLeft.x
         val rawOffsetRight = scene.viewport.width - scene.selection.bottomRight.x
 
         val w2vRatio = window.width / scene.viewport.width.toFloat()
+        val h2vRatio = window.height / scene.viewport.height.toFloat()
 
         val offsetLeftX = (rawOffsetLeft * w2vRatio).roundToInt()
         val offsetRightX = (rawOffsetRight * w2vRatio).roundToInt()
         val newWindowWidth = window.width - offsetLeftX - offsetRightX
 
-        val buffer = ByteBuffer.allocateDirect(newWindowWidth * window.height * 4)
+        val offsetTopY = (scene.selection.topLeft.y * h2vRatio).roundToInt()
+        val offsetBottomY = ((scene.viewport.height - scene.selection.bottomRight.y) * h2vRatio).roundToInt()
+
+        val newWindowHeight = window.height - offsetTopY - offsetBottomY
+
+        val buffer = ByteBuffer.allocateDirect(newWindowWidth * newWindowHeight * 4)
             .order(ByteOrder.nativeOrder())
             .position(0)
 
-
         GLES31.glReadPixels(
             offsetLeftX,
-            0,
+            offsetTopY,
             newWindowWidth,
-            window.height,
+            newWindowHeight,
             GLES31.GL_RGBA,
             GLES31.GL_UNSIGNED_BYTE,
             buffer
         )
-        val bitmap = Bitmap.createBitmap(newWindowWidth, window.height, Bitmap.Config.ARGB_8888)
+
+        val bitmap = Bitmap.createBitmap(newWindowWidth, newWindowHeight, Bitmap.Config.ARGB_8888)
         bitmap.copyPixelsFromBuffer(buffer)
 
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.originalTexture)
@@ -118,19 +118,6 @@ class CropTransformation(
             GLES31.GL_UNSIGNED_BYTE,
             buffer
         )*/
-
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.cropTexture)
-        GLES31.glTexImage2D(
-            GLES31.GL_TEXTURE_2D,
-            0,
-            GLES31.GL_RGBA,
-            window.width,
-            window.height,
-            0,
-            GLES31.GL_RGBA,
-            GLES31.GL_UNSIGNED_BYTE,
-            null
-        )
 
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
         val offsetHandle = GLES31.glGetUniformLocation(program, "offset")
