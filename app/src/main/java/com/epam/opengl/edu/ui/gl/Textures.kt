@@ -17,24 +17,30 @@ value class Textures private constructor(
         const val PongTextureIdx = 2
     }
 
-    constructor() : this(IntArray(4))
-
-    inline val originalTexture: Int
-        get() = array[0]
-
-    inline val pingTexture: Int
-        get() = array[PingTextureIdx]
-
-    inline val pongTexture: Int
-        get() = array[PongTextureIdx]
-
-    inline val cropTexture: Int
-        get() = array[3]
-
-    inline val size: Int
-        get() = array.size
-
-    @Suppress("NOTHING_TO_INLINE")
-    inline operator fun get(i: Int) = array[i]
-
+    constructor() : this(IntArray(3))
 }
+
+inline val Textures.originalTexture: Int
+    get() = array[0]
+
+inline val Textures.pingTexture: Int
+    get() = array[Textures.PingTextureIdx]
+
+inline val Textures.pongTexture: Int
+    get() = array[Textures.PongTextureIdx]
+
+inline val Textures.size: Int
+    get() = array.size
+
+@Suppress("NOTHING_TO_INLINE")
+inline operator fun Textures.get(i: Int) = array[i]
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun Textures.readTextureFor(
+    fboIdx: Int,
+): Int = this[fboIdx.takeIf { it == 0 } ?: (1 + ((1 + fboIdx) % (size - 1)))]
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun Textures.bindTextureFor(
+    fboIdx: Int,
+): Int = this[1 + fboIdx % (size - 1)]

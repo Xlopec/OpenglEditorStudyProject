@@ -1,18 +1,21 @@
 package com.epam.opengl.edu.ui.gl
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.opengl.GLES31
-import android.opengl.GLUtils
 import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.geometry.component1
 import com.epam.opengl.edu.model.geometry.component2
 import com.epam.opengl.edu.model.geometry.height
+import com.epam.opengl.edu.model.geometry.minus
 import com.epam.opengl.edu.model.geometry.width
 import com.epam.opengl.edu.model.geometry.x
 import com.epam.opengl.edu.model.geometry.y
+import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.model.transformation.Transformations
-import com.epam.opengl.edu.model.transformation.toNormalized
+import com.epam.opengl.edu.model.transformation.leftTopImageOffset
+import com.epam.opengl.edu.model.transformation.rightBottomImageOffset
+import com.epam.opengl.edu.model.transformation.toGlPoint
+import com.epam.opengl.edu.model.transformation.toSceneOffset
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -45,73 +48,43 @@ class CropTransformation(
         texture: Int,
     ) {
         val scene = transformations.scene
-        render(fbo) { cropRegionHandle, _, _ ->
+        render(fbo, scene) { cropRegionHandle, borderWidthHandle, _ ->
+            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
+            GLES31.glUniform4f(cropRegionHandle, 0f, 0f, 0f, 0f)
+            GLES31.glUniform1f(borderWidthHandle, 0f)
+        }
+        with(scene) {
+            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.originalTexture)
 
-            // resize texture bound to this framebuffer
-            /*GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.cropTexture)
+            val topLeft = leftTopImageOffset.toSceneOffset()
+            val bottomRight = rightBottomImageOffset.toSceneOffset()
+            val croppedSize = window - topLeft - bottomRight
+            val buffer = ByteBuffer.allocateDirect(croppedSize.width * croppedSize.height * 4)
+                .order(ByteOrder.nativeOrder())
+                .position(0)
+
+            GLES31.glReadPixels(
+                /* x = */ topLeft.x.roundToInt(),
+                /* y = */ topLeft.y.roundToInt(),
+                /* width = */ croppedSize.width,
+                /* height = */ croppedSize.height,
+                /* format = */ GLES31.GL_RGBA,
+                /* type = */ GLES31.GL_UNSIGNED_BYTE,
+                /* pixels = */ buffer
+            )
+
             GLES31.glTexImage2D(
                 GLES31.GL_TEXTURE_2D,
                 0,
                 GLES31.GL_RGBA,
-                (window.width),// * (croppedTextureSize.width.toFloat() / scene.viewport.width.toFloat())).roundToInt(),
-                window.height,
+                croppedSize.width,
+                croppedSize.height,
                 0,
                 GLES31.GL_RGBA,
                 GLES31.GL_UNSIGNED_BYTE,
-                null
-            )*/
-
-            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-            GLES31.glUniform4f(cropRegionHandle, 0f, 0f, 0f, 0f)
+                buffer
+            )
         }
-        val rawOffsetLeft = scene.selection.topLeft.x
-        val rawOffsetRight = scene.image.width - scene.selection.bottomRight.x
-
-        val w2vRatio = scene.window.width / scene.image.width.toFloat()
-        val h2vRatio = scene.window.height / scene.image.height.toFloat()
-
-        val offsetLeftX = (rawOffsetLeft * w2vRatio).roundToInt()
-        val offsetRightX = (rawOffsetRight * w2vRatio).roundToInt()
-        val newWindowWidth = scene.window.width - offsetLeftX - offsetRightX
-
-        val offsetTopY = (scene.selection.topLeft.y * h2vRatio).roundToInt()
-        val offsetBottomY = ((scene.image.height - scene.selection.bottomRight.y) * h2vRatio).roundToInt()
-
-        val newWindowHeight = scene.window.height - offsetTopY - offsetBottomY
-
-        val buffer = ByteBuffer.allocateDirect(newWindowWidth * newWindowHeight * 4)
-            .order(ByteOrder.nativeOrder())
-            .position(0)
-
-        GLES31.glReadPixels(
-            offsetLeftX,
-            offsetTopY,
-            newWindowWidth,
-            newWindowHeight,
-            GLES31.GL_RGBA,
-            GLES31.GL_UNSIGNED_BYTE,
-            buffer
-        )
-
-        val bitmap = Bitmap.createBitmap(newWindowWidth, newWindowHeight, Bitmap.Config.ARGB_8888)
-        bitmap.copyPixelsFromBuffer(buffer)
-
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.originalTexture)
-
-        GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
-        /*GLES31.glTexImage2D(
-            GLES31.GL_TEXTURE_2D,
-            0,
-            GLES31.GL_RGBA,
-            croppedTextureSize.width,
-            croppedTextureSize.height,
-            0,
-            GLES31.GL_RGBA,
-            GLES31.GL_UNSIGNED_BYTE,
-            buffer
-        )*/
-
-        bitmap.recycle()
     }
 
     context (GL)
@@ -120,19 +93,15 @@ class CropTransformation(
         fbo: Int,
         texture: Int,
     ) {
-        render(fbo) { cropRegionHandle, borderWidthHandle, pointerHandle ->
-            val scene = transformations.scene
+        render(fbo, transformations.scene) { cropRegionHandle, borderWidthHandle, pointerHandle ->
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / scene.image.width)
+            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / maxOf(window.width, window.height))
+            val (x, y) = imagePoint.toGlPoint()
+            GLES31.glUniform2f(pointerHandle, x, y)
 
-            with(scene) {
-                val (left, top) = scene.selection.topLeft.toNormalized()
-                val (right, bottom) = scene.selection.bottomRight.toNormalized()
-                val pointer = scene.imagePoint.toNormalized()
-                // Coordinate origin is bottom left!
-                GLES31.glUniform4f(cropRegionHandle, left, 1f - top, right, 1f - bottom)
-                GLES31.glUniform2f(pointerHandle, pointer.x, 1f - pointer.y)
-            }
+            val (left, top) = selection.topLeft.toGlPoint()
+            val (right, bottom) = selection.bottomRight.toGlPoint()
+            GLES31.glUniform4f(cropRegionHandle, left, top, right, bottom)
         }
     }
 
@@ -142,13 +111,12 @@ class CropTransformation(
         texture: Int,
         transformations: Transformations,
     ) {
-
-        render(fbo) { cropRegionHandle, borderWidthHandle, pointerHandle ->
+        render(fbo, transformations.scene) { cropRegionHandle, borderWidthHandle, pointerHandle ->
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-            val pointer = with(transformations.scene) { imagePoint.toNormalized() }
-            GLES31.glUniform2f(pointerHandle, pointer.x, 1f - pointer.y)
+            val (x, y) = imagePoint.toGlPoint()
+            GLES31.glUniform2f(pointerHandle, x, y)
             GLES31.glUniform4f(cropRegionHandle, 0f, 0f, 0f, 0f)
-            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / transformations.scene.image.width)
+            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / maxOf(window.width, window.height))
         }
     }
 
@@ -156,10 +124,11 @@ class CropTransformation(
             @OptIn(ExperimentalContracts::class)
             private /*inline*/ fun render(
         fbo: Int,
-        strategy: (cropRegionHandle: Int, borderWidthHandle: Int, pointerHandle: Int) -> Unit,
+        scene: Scene,
+        renderer: Scene.(cropRegionHandle: Int, borderWidthHandle: Int, pointerHandle: Int) -> Unit,
     ) {
         contract {
-            callsInPlace(strategy, InvocationKind.EXACTLY_ONCE)
+            callsInPlace(renderer, InvocationKind.EXACTLY_ONCE)
         }
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, fbo)
         GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
@@ -174,7 +143,7 @@ class CropTransformation(
         GLES31.glVertexAttribPointer(texturePositionHandle, 2, GLES31.GL_FLOAT, false, 0, textureCoordinates)
         GLES31.glEnableVertexAttribArray(texturePositionHandle)
 
-        strategy(cropRegionHandle, borderWidthHandle, pointerHandle)
+        renderer(scene, cropRegionHandle, borderWidthHandle, pointerHandle)
 
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
         GLES31.glEnableVertexAttribArray(positionHandle)

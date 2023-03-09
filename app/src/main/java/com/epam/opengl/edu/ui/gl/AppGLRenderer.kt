@@ -16,8 +16,6 @@ import com.epam.opengl.edu.model.geometry.width
 import com.epam.opengl.edu.model.geometry.x
 import com.epam.opengl.edu.model.geometry.y
 import com.epam.opengl.edu.model.transformation.ratio
-import com.epam.opengl.edu.ui.gl.Textures.Companion.PingTextureIdx
-import com.epam.opengl.edu.ui.gl.Textures.Companion.PongTextureIdx
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -30,7 +28,7 @@ class AppGLRenderer(
     private val context: Context,
     private val view: GLSurfaceView,
     private val onCropped: () -> Unit,
-    private val onViewportChange: (Size) -> Unit,
+    private val onViewportSizeChange: (Size) -> Unit,
 ) : GLSurfaceView.Renderer, View.OnTouchListener {
 
     @Volatile
@@ -47,6 +45,7 @@ class AppGLRenderer(
 
             if (viewportChanged) {
                 view.queueEvent {
+                    // fixme image doesn't need to be passed in some cases
                     bindBuffers(value!!.displayTransformations.scene.window, value.image)
                 }
             } else if (imageChanged) {
@@ -87,7 +86,6 @@ class AppGLRenderer(
         GaussianBlurTransformation(context, verticesBuffer, textureBuffer),
     )
 
-    // 1 extra buffer for cropping
     private val frameBuffers = FrameBuffers(colorTransformations.size + 1)
     private val projectionMatrix = FloatArray(16)
     private val vPMatrix = FloatArray(16)
@@ -98,15 +96,7 @@ class AppGLRenderer(
     @Volatile
     private var cropRequested = false
 
-    private var cooldown = 0L
-
     fun requestCrop() {
-        println("Request crop")
-        if (System.currentTimeMillis() - cooldown < 100L) {
-            return
-        }
-
-        cooldown = System.currentTimeMillis()
         require(!cropRequested) { "Requesting crop during cropping might lead to state inconsistency bugs" }
         cropRequested = true
         view.requestRender()
@@ -131,13 +121,13 @@ class AppGLRenderer(
                 transformations = transformations,
                 fbo = frameBuffers[index],
                 // fbo index -> txt index mapping: 0 -> 0; 1 -> 1; 2 -> 2; 3 -> 1; 4 -> 2...
-                texture = textures[index.takeIf { it == 0 } ?: (1 + ((1 + index) % (textures.size - 2)))],
+                texture = textures.readTextureFor(index),
             )
         }
 
         val cropWasRequested = cropRequested
         cropRequested = false
-        val readFromTexture = textures[(frameBuffers.size - 1) % (textures.size - 2)]
+        val readFromTexture = textures.readTextureFor(frameBuffers.size - 1)
 
         if (cropWasRequested) {
             cropTransformation.crop(
@@ -159,25 +149,26 @@ class AppGLRenderer(
             )
         }
 
-        val ratio = transformations.scene.window.ratio
-        val consumedOffsetX = 2 * ratio * transformations.scene.sceneOffset.x / transformations.scene.window.width
-        val consumedOffsetY = 2 * transformations.scene.sceneOffset.y / transformations.scene.window.height
+        with(transformations.scene) {
+            val frustumOffsetX = 2 * window.ratio * sceneOffset.x / window.width
+            val frustumOffsetY = 2 * sceneOffset.y / window.height
 
-        Matrix.frustumM(
-            /* m = */ projectionMatrix,
-            /* offset = */ 0,
-            /* left = */ -ratio - consumedOffsetX,
-            /* right = */ ratio - consumedOffsetX,
-            /* bottom = */ -1f + consumedOffsetY,
-            /* top = */ 1f + consumedOffsetY,
-            /* near = */ 3f,
-            /* far = */ 7f
-        )
+            Matrix.frustumM(
+                /* m = */ projectionMatrix,
+                /* offset = */ 0,
+                /* left = */ -window.ratio - frustumOffsetX,
+                /* right = */ window.ratio - frustumOffsetX,
+                /* bottom = */ -1f + frustumOffsetY,
+                /* top = */ 1f + frustumOffsetY,
+                /* near = */ 3f,
+                /* far = */ 7f
+            )
 
-        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1f, 0f)
-        // Calculate the projection and view transformation
-        Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-        viewTransformation.render(vPMatrix, 0, textures.cropTexture, transformations.scene.image)
+            Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1f, 0f)
+            // Calculate the projection and view transformation
+            Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
+            viewTransformation.render(vPMatrix, 0, textures.readTextureFor(frameBuffers.size), image)
+        }
 
         if (cropWasRequested) {
             onCropped()
@@ -203,8 +194,7 @@ class AppGLRenderer(
         width: Int,
         height: Int,
     ) {
-        println("Surface $width - $height")
-        onViewportChange(Size(width, height))
+        onViewportSizeChange(Size(width, height))
     }
 
     private fun bindImage(
@@ -248,15 +238,9 @@ class AppGLRenderer(
         // frameBuffers[2] -> textures[1]
         // frameBuffers[3] -> textures[2]
         // ...
-        for (frameBufferIndex in 0 until frameBuffers.size - 1) {
-            val textureIndex = 1 + (frameBufferIndex % (textures.size - 2))
-            require(textureIndex == PingTextureIdx || textureIndex == PongTextureIdx) {
-                "incorrect texture index, was $textureIndex"
-            }
-            setupFrameBuffer(viewport, textures[textureIndex], frameBuffers[frameBufferIndex])
+        for (frameBufferIndex in 0 until frameBuffers.size) {
+            setupFrameBuffer(viewport, textures.bindTextureFor(frameBufferIndex), frameBuffers[frameBufferIndex])
         }
-
-        setupFrameBuffer(viewport, textures.cropTexture, frameBuffers.cropFrameBuffer)
     }
 
     private fun setupFrameBuffer(
@@ -267,15 +251,15 @@ class AppGLRenderer(
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffer)
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
         GLES31.glTexImage2D(
-            GLES31.GL_TEXTURE_2D,
-            0,
-            GLES31.GL_RGBA,
-            size.width,
-            size.height,
-            0,
-            GLES31.GL_RGBA,
-            GLES31.GL_UNSIGNED_BYTE,
-            null
+            /* target = */ GLES31.GL_TEXTURE_2D,
+            /* level = */ 0,
+            /* internalformat = */ GLES31.GL_RGBA,
+            /* width = */ size.width,
+            /* height = */ size.height,
+            /* border = */ 0,
+            /* format = */ GLES31.GL_RGBA,
+            /* type = */ GLES31.GL_UNSIGNED_BYTE,
+            /* pixels = */ null
         )
         GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR)
         GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_LINEAR)

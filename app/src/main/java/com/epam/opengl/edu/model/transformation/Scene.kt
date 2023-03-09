@@ -1,7 +1,7 @@
 package com.epam.opengl.edu.model.transformation
 
 import android.view.MotionEvent
-import com.epam.opengl.edu.model.geometry.NormalizedPoint
+import com.epam.opengl.edu.model.geometry.GlPoint
 import com.epam.opengl.edu.model.geometry.Offset
 import com.epam.opengl.edu.model.geometry.Point
 import com.epam.opengl.edu.model.geometry.Rect
@@ -20,6 +20,7 @@ import com.epam.opengl.edu.model.geometry.moveRightEdgeWithinBounds
 import com.epam.opengl.edu.model.geometry.moveTopEdgeWithinBounds
 import com.epam.opengl.edu.model.geometry.offsetByWithinBounds
 import com.epam.opengl.edu.model.geometry.plus
+import com.epam.opengl.edu.model.geometry.size
 import com.epam.opengl.edu.model.geometry.width
 import com.epam.opengl.edu.model.geometry.x
 import com.epam.opengl.edu.model.geometry.y
@@ -47,7 +48,7 @@ class Scene(
     /**
      * Current scene offset
      */
-    var sceneOffset: SceneOffset = SceneOffset()
+    var sceneOffset: SceneOffset = SceneOffset(0f, 0f)
         private set
 
     /**
@@ -126,31 +127,24 @@ class Scene(
 
 }
 
-fun Scene.onCropped(): Scene {
-    return Scene(
-        image = croppedImageSize,
-        window = window
-    )
-}
+fun Scene.onCropped(): Scene = Scene(image = selection.size, window = window)
 
-/**
- * Image size given current [Scene.selection] and [Scene.image]
- */
-inline val Scene.croppedImageSize: Size
-    get() = Size(
-        image.width - (selection.topLeft.x + image.width - selection.bottomRight.x),
-        image.height - (selection.topLeft.y + image.height - selection.bottomRight.y)
-    )
+val Scene.leftTopImageOffset: Offset
+    get() = Offset(selection.topLeft.x, selection.topLeft.y)
+
+val Scene.rightBottomImageOffset: Offset
+    get() = Offset(image.width - selection.bottomRight.x, image.height - selection.bottomRight.y)
+
+context (Scene)
+fun Offset.toSceneOffset(): SceneOffset {
+    val widthScaleFactor = window.width / image.width.toFloat()
+    val heightScaleFactor = window.height / image.height.toFloat()
+    return SceneOffset(x * widthScaleFactor, y * heightScaleFactor)
+}
 
 context (Scene)
         @Suppress("NOTHING_TO_INLINE")
-        inline fun Point.toNormalized(): NormalizedPoint =
-    NormalizedPoint.safeOf(
-        // Puts x in range [0 .. 1f]
-        x = x / image.width.toFloat(),
-        // Puts y in range [0 .. 1f]
-        y = y / image.height.toFloat()
-    )
+        inline fun Point.toGlPoint(): GlPoint = GlPoint.fromPoint(this, image)
 
 context (Scene)
         private fun ScenePoint.toImagePoint(): Point {

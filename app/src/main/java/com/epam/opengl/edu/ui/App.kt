@@ -64,7 +64,7 @@ import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.isDisplayed
 import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.ui.gl.AppGLRenderer
-import com.epam.opengl.edu.ui.gl.asBitmap
+import com.epam.opengl.edu.ui.gl.decodeImageSize
 import com.epam.opengl.edu.ui.theme.AppTheme
 import io.github.xlopec.tea.core.Initial
 import io.github.xlopec.tea.core.Snapshot
@@ -94,12 +94,9 @@ fun App(
         val viewport = viewportSize
 
         if (image != null && viewport != null) {
-            // fixme later
-            val b = with(context) { image.asBitmap() }
-            val size = Size(b.width, b.height)
-            b.recycle()
-
-            handler(OnDataPrepared(image = image, imageSize = size, windowSize = viewport))
+            // fixme image might not always needs to be loaded
+            val imageSize = with(context) { image.decodeImageSize() }
+            handler(OnDataPrepared(image = image, imageSize = imageSize, windowSize = viewport))
         }
     }
 
@@ -116,7 +113,6 @@ fun App(
                             IconButton(onClick = { handler(OnUndoTransformation) }) {
                                 BadgedBox(badge = {
                                     Badge {
-                                        val context = LocalContext.current
                                         Text(
                                             text = with(context) { state.editMenu.undoBadgeText },
                                             style = MaterialTheme.typography.caption

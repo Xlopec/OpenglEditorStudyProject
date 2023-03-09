@@ -38,12 +38,20 @@ bool drawSelectionRect() {
     return cropRegion.x != 0.0f || cropRegion.y != 0.0f || cropRegion.z != 0.0f || cropRegion.w != 0.0f;
 }
 
-bool rectLine() {
+bool isRectLine() {
     return horizontalLine(vTexPosition, cropRegion) || verticalLine(vTexPosition, cropRegion);
 }
 
-bool rectContent() {
+bool isRectContent() {
     return inside(vTexPosition.x, cropRegion.x, cropRegion.z) && inside(vTexPosition.y, cropRegion.y, cropRegion.w);
+}
+
+bool drawInputPointer() {
+    return borderWidth > 0.0f;
+}
+
+bool isInputPointer() {
+    return abs(vTexPosition.x - pointer.x) <= borderWidth || abs(vTexPosition.y - pointer.y) <= borderWidth;
 }
 
 // see https://en.wikipedia.org/wiki/Alpha_compositing
@@ -60,11 +68,11 @@ vec4 tint(vec4 foreground, vec4 background)
 
 void main()
 {
-    if (abs(vTexPosition.x - pointer.x) <= borderWidth || abs(vTexPosition.y - pointer.y) <= borderWidth) {
+    if (drawInputPointer() && isInputPointer()) {
         outColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);
-    } else if (drawSelectionRect() && rectLine()) {
+    } else if (drawSelectionRect() && isRectLine()) {
         outColor = cropRegionLineColor;
-    } else if (drawSelectionRect() && rectContent()) {
+    } else if (drawSelectionRect() && isRectContent()) {
         outColor = tint(cropRegionContentTint, texture(uTexture, vTexPosition));
     } else {
         outColor = texture(uTexture, vTexPosition);
