@@ -128,7 +128,7 @@ class CropTransformation(
             with(scene) {
                 val (left, top) = scene.selection.topLeft.toNormalized()
                 val (right, bottom) = scene.selection.bottomRight.toNormalized()
-                val pointer = scene.userInput.toNormalized()
+                val pointer = scene.imagePoint.toNormalized()
                 // Coordinate origin is bottom left!
                 GLES31.glUniform4f(cropRegionHandle, left, 1f - top, right, 1f - bottom)
                 GLES31.glUniform2f(pointerHandle, pointer.x, 1f - pointer.y)
@@ -145,7 +145,7 @@ class CropTransformation(
 
         render(fbo) { cropRegionHandle, borderWidthHandle, pointerHandle ->
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-            val pointer = with(transformations.scene) { userInput.toNormalized() }
+            val pointer = with(transformations.scene) { imagePoint.toNormalized() }
             GLES31.glUniform2f(pointerHandle, pointer.x, 1f - pointer.y)
             GLES31.glUniform4f(cropRegionHandle, 0f, 0f, 0f, 0f)
             GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / transformations.scene.image.width)

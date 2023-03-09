@@ -5,14 +5,15 @@ import com.epam.opengl.edu.model.geometry.NormalizedPoint
 import com.epam.opengl.edu.model.geometry.Offset
 import com.epam.opengl.edu.model.geometry.Point
 import com.epam.opengl.edu.model.geometry.Rect
+import com.epam.opengl.edu.model.geometry.SceneOffset
+import com.epam.opengl.edu.model.geometry.ScenePoint
 import com.epam.opengl.edu.model.geometry.Size
-import com.epam.opengl.edu.model.geometry.component1
-import com.epam.opengl.edu.model.geometry.component2
 import com.epam.opengl.edu.model.geometry.height
 import com.epam.opengl.edu.model.geometry.isOnBottomEdgeOf
 import com.epam.opengl.edu.model.geometry.isOnLeftEdgeOf
 import com.epam.opengl.edu.model.geometry.isOnRightEdgeOf
 import com.epam.opengl.edu.model.geometry.isOnTopEdgeOf
+import com.epam.opengl.edu.model.geometry.minus
 import com.epam.opengl.edu.model.geometry.moveBottomEdgeWithinBounds
 import com.epam.opengl.edu.model.geometry.moveLeftEdgeWithinBounds
 import com.epam.opengl.edu.model.geometry.moveRightEdgeWithinBounds
@@ -32,6 +33,9 @@ class Scene(
      * Current image size
      */
     val image: Size,
+    /**
+     * Current window size
+     */
     val window: Size,
 ) : Transformation {
 
@@ -40,16 +44,19 @@ class Scene(
         const val MinSize = TolerancePx * 3
     }
 
-    var sceneOffset = Offset()
+    /**
+     * Current scene offset
+     */
+    var sceneOffset: SceneOffset = SceneOffset()
         private set
 
     /**
      * User input in image coordinate system
      */
-    var userInput = Point(0, 0)
+    var imagePoint = Point(0, 0)
         private set
 
-    private var previousRawPoint = Point(0, 0)
+    private var previousScenePoint = ScenePoint(0f, 0f)
 
     /**
      * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
@@ -60,35 +67,30 @@ class Scene(
     )
         private set
 
-    // fixme problems with zoom
-    private var previousInput = Point(0, 0)
+    private var previousImagePoint = Point(0, 0)
 
     fun onTouch(
         event: MotionEvent,
         isCropSelectionMode: Boolean,
     ) {
-        val rawPoint = Point(event.x.roundToInt(), event.y.roundToInt())
-        val rawOffsetDelta = Offset(rawPoint.x - previousRawPoint.x, rawPoint.y - previousRawPoint.y)
-        previousRawPoint = rawPoint
+        val scenePoint = ScenePoint(event.x, event.y)
+        val windowOffsetDelta = SceneOffset(scenePoint, previousScenePoint)
+        previousScenePoint = scenePoint
 
-        userInput = event.toImagePoint(sceneOffset)
-        println("Input $userInput")
-        val offset = Offset(userInput.x - previousInput.x, userInput.y - previousInput.y)
-        previousInput = userInput
+        imagePoint = (event.toScenePoint() - sceneOffset).toImagePoint()
+        val imageOffsetDelta = Offset(imagePoint.x - previousImagePoint.x, imagePoint.y - previousImagePoint.y)
+        previousImagePoint = imagePoint
 
-        if (event.pointerCount > 1) {
-            // not implemented yet
-            return
-        } else {
-            handleMovement(event.action, isCropSelectionMode, offset, rawOffsetDelta, userInput)
+        if (event.pointerCount == 1) {
+            handleMovement(event.action, isCropSelectionMode, imageOffsetDelta, windowOffsetDelta, imagePoint)
         }
     }
 
     private fun handleMovement(
         action: Int,
         isCropSelectionMode: Boolean,
-        imageOffset: Offset,
-        sceneOffset: Offset,
+        imageOffsetDelta: Offset,
+        sceneOffsetDelta: SceneOffset,
         userInput: Point,
     ) = with(image) {
         when (action) {
@@ -111,11 +113,11 @@ class Scene(
                     }
 
                     isCropSelectionMode && userInput in selection -> {
-                        selection = selection.offsetByWithinBounds(imageOffset)
+                        selection = selection.offsetByWithinBounds(imageOffsetDelta)
                     }
 
                     else -> {
-                        this@Scene.sceneOffset += sceneOffset
+                        sceneOffset += sceneOffsetDelta
                     }
                 }
             }
@@ -151,9 +153,7 @@ context (Scene)
     )
 
 context (Scene)
-        private fun MotionEvent.toImagePoint(sceneOffset: Offset): Point {
-    val (osX, osY) = sceneOffset
-
+        private fun ScenePoint.toImagePoint(): Point {
     return if (image.isPortrait) {
         val viewport2WindowHeight = image.height.toFloat() / window.height
         // how many times image was stretched to fit the window height
@@ -163,9 +163,9 @@ context (Scene)
         val scaledWidthInWindow = scaleFactor * image.width
         val offsetX = window.width - scaledWidthInWindow
         val halfOffsetPx = offsetX * 0.5f
-        val xWindow = x - halfOffsetPx - osX
+        val xWindow = x - halfOffsetPx
         val xImage = (viewport2WindowHeight * xWindow).roundToInt()
-        val yImage = ((y - osY) * viewport2WindowHeight).roundToInt()
+        val yImage = (y * viewport2WindowHeight).roundToInt()
 
         Point(xImage, yImage)
     } else {
@@ -176,12 +176,12 @@ context (Scene)
         val onscreenImageWidthPx = window.ratio * image.width
         val offscreenImageWidthPx = image.width - onscreenImageWidthPx
         val visible2WindowWidth = onscreenImageWidthPx / window.width
-        val imageX = ((x - osX) * visible2WindowWidth + 0.5f * offscreenImageWidthPx).roundToInt()
+        val imageX = (x * visible2WindowWidth + 0.5f * offscreenImageWidthPx).roundToInt()
 
         val scaleFactor = 1f / visible2WindowWidth
         val scaledHeightInWindow = scaleFactor * image.height
         val offsetY = window.height - scaledHeightInWindow
-        val yWindow = (y - osY) - 0.5f * offsetY
+        val yWindow = y - 0.5f * offsetY
         val yImage = (visible2WindowWidth * yWindow).roundToInt()
 
         Point(imageX, yImage)
@@ -189,9 +189,12 @@ context (Scene)
 }
 
 @Suppress("NOTHING_TO_INLINE")
+private inline fun MotionEvent.toScenePoint() = ScenePoint(x, y)
+
+@Suppress("NOTHING_TO_INLINE")
 private inline operator fun Rect.contains(
-    point: Point,
-): Boolean = point.x in topLeft.x..bottomRight.x && point.y in topLeft.y..bottomRight.y
+    imagePoint: Point,
+): Boolean = imagePoint.x in topLeft.x..bottomRight.x && imagePoint.y in topLeft.y..bottomRight.y
 
 inline val Size.isPortrait: Boolean
     get() = width < height

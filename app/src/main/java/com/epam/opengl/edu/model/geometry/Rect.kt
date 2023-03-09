@@ -64,6 +64,17 @@ fun Rect.offsetByWithinBounds(
     return offsetTo(Offset(x, y))
 }
 
+context (Size)
+fun Rect.offsetToWithinBounds(
+    offset: Offset,
+): Rect {
+    val size = size
+    val x = offset.x.coerceIn(0, width - size.width)
+    val y = offset.y.coerceIn(0, height - size.height)
+
+    return offsetTo(Offset(x, y))
+}
+
 fun Point.isOnRightEdgeOf(
     rect: Rect,
     tolerancePx: Int,

@@ -160,8 +160,8 @@ class AppGLRenderer(
         }
 
         val ratio = transformations.scene.window.ratio
-        val consumedOffsetX = 2 * ratio * transformations.scene.sceneOffset.x.toFloat() / transformations.scene.window.width
-        val consumedOffsetY = 2 * transformations.scene.sceneOffset.y.toFloat() / transformations.scene.window.height
+        val consumedOffsetX = 2 * ratio * transformations.scene.sceneOffset.x / transformations.scene.window.width
+        val consumedOffsetY = 2 * transformations.scene.sceneOffset.y / transformations.scene.window.height
 
         Matrix.frustumM(
             /* m = */ projectionMatrix,
