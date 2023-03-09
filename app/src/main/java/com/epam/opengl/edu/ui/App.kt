@@ -55,9 +55,9 @@ import com.epam.opengl.edu.model.Command
 import com.epam.opengl.edu.model.EditMenu
 import com.epam.opengl.edu.model.Message
 import com.epam.opengl.edu.model.OnCropped
+import com.epam.opengl.edu.model.OnDataPrepared
 import com.epam.opengl.edu.model.OnEditorMenuToggled
 import com.epam.opengl.edu.model.OnUndoTransformation
-import com.epam.opengl.edu.model.OnViewportAndImageUpdated
 import com.epam.opengl.edu.model.TransformationApplied
 import com.epam.opengl.edu.model.canUndoTransformations
 import com.epam.opengl.edu.model.geometry.Size
@@ -99,7 +99,7 @@ fun App(
             val size = Size(b.width, b.height)
             b.recycle()
 
-            handler(OnViewportAndImageUpdated(image, size))
+            handler(OnDataPrepared(image = image, imageSize = size, windowSize = viewport))
         }
     }
 

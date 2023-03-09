@@ -413,7 +413,15 @@ private fun EditMenuDisplayedPreview() {
     AppTheme {
         EditMenu(
             menu = EditMenu(
-                current = Transformations(Scene(Size(10, 10))),
+                current = Transformations(
+                    Scene(
+                        image = Size(10, 10),
+                        window = Size(
+                            width = 1080,
+                            height = 1584
+                        )
+                    )
+                ),
                 image = Uri.EMPTY,
                 state = Displayed
             ),
@@ -445,11 +453,25 @@ private fun EditMenuEditTransformationPreview() {
         EditMenu(
             menu = EditMenu(
                 image = Uri.EMPTY,
-                current = Transformations(Scene(Size(10, 10))),
+                current = Transformations(
+                    Scene(
+                        image = Size(10, 10),
+                        window = Size(
+                            width = 1080,
+                            height = 1584
+                        )
+                    )
+                ),
                 state = EditTransformation(
                     which = Grayscale::class,
                     edited = Transformations(
-                        scene = Scene(Size(10, 10)),
+                        scene = Scene(
+                            image = Size(10, 10),
+                            window = Size(
+                                width = 1080,
+                                height = 1584
+                            )
+                        ),
                         grayscale = Grayscale(0.37f)
                     )
                 )

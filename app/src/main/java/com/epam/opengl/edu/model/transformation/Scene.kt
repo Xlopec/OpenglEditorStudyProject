@@ -32,16 +32,13 @@ class Scene(
      * Current image size
      */
     val image: Size,
+    val window: Size,
     /**
      * Image offset accumulated relative to the left side of crop rect.
      * This is needed to account invisible offset accumulated after each crop because
      * we need to calculate offset in coordinate system of the original image
      */
     val cropOriginOffset: Offset = Offset(0, 0),
-    val window: Size = Size(
-        width = 1080,
-        height = 1584 //2054
-    ),
 ) : Transformation {
 
     companion object {
@@ -176,6 +173,7 @@ class Scene(
 fun Scene.onCropped(): Scene {
     return Scene(
         image = croppedImageSize,
+        window = window
     )
 }
 

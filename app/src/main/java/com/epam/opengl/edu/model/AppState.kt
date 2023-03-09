@@ -16,7 +16,14 @@ fun AppState.withEditMenu(
 
 fun AppState.onImageOrViewportUpdated(
     image: Uri,
-    viewport: Size,
-): AppState = AppState(editMenu = editMenu.updateViewportAndImageOrCreate(image, viewport))
+    imageSize: Size,
+    windowSize: Size,
+): AppState = AppState(
+    editMenu = editMenu.updateViewportAndImageOrCreate(
+        newImage = image,
+        newImageSize = imageSize,
+        newWindowSize = windowSize
+    )
+)
 
 

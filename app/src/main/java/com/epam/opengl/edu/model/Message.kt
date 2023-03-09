@@ -26,9 +26,10 @@ object OnApplyChanges : Message
 
 object OnDiscardChanges : Message
 
-data class OnViewportAndImageUpdated(
+data class OnDataPrepared(
     val image: Uri,
     val imageSize: Size,
+    val windowSize: Size,
 ) : Message
 
 object OnCropped : Message

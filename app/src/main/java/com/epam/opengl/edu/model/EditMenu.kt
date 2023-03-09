@@ -54,24 +54,26 @@ fun EditMenu.undoLastTransformation() =
 
 fun EditMenu?.updateViewportAndImageOrCreate(
     newImage: Uri,
-    newSize: Size,
-): EditMenu = this?.updateViewportAndImage(newImage, newSize) ?: EditMenu(
+    newImageSize: Size,
+    newWindowSize: Size,
+): EditMenu = this?.updateViewportAndImage(newImage, newImageSize, newWindowSize) ?: EditMenu(
     image = newImage,
-    current = Transformations(scene = Scene(newSize))
+    current = Transformations(scene = Scene(image = newImageSize, window = newWindowSize))
 )
 
 fun EditMenu.updateViewportAndImage(
     newImage: Uri,
-    newTexture: Size,
+    newImageSize: Size,
+    newWindowSize: Size,
 ): EditMenu {
     val updated = if (newImage != image) {
-        copy(image = newImage).updateTransformation(Scene(newTexture))
+        copy(image = newImage).updateTransformation(Scene(image = newImageSize, window = newWindowSize))
     } else {
         this
     }
 
-    return if (newImage == image && newTexture != displayTransformations.scene.image) {
-        updated.updateTransformation(Scene(newTexture))
+    return if (newImage == image && newWindowSize != displayTransformations.scene.window) {
+        updated.updateTransformation(Scene(image = newImageSize, window = newWindowSize))
     } else {
         updated
     }
