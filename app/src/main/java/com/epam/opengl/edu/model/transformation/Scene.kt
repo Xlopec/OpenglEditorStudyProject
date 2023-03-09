@@ -200,12 +200,6 @@ inline val Scene.croppedImageSize: Size
         image.height - (selection.topLeft.y + image.height - selection.bottomRight.y)
     )
 
-private inline val Scene.consumedImageOffset: Offset
-    get() = Offset(
-        x = (selection.topLeft.x * image.width.toFloat() / image.width).roundToInt(),
-        y = (selection.topLeft.y * image.height.toFloat() / image.height).roundToInt()
-    )
-
 context (Scene)
         @Suppress("NOTHING_TO_INLINE")
         inline fun Point.toNormalized(): NormalizedPoint =
@@ -215,33 +209,6 @@ context (Scene)
         // Puts y in range [0 .. 1f]
         y = y / image.height.toFloat()
     )
-
-
-inline val Scene.maxOffsetDistanceXPointsBeforeEdgeVisible: Float
-    get() = 1 - image.ratio + (2 * image.ratio - 2 * image.ratio / zoom) / 2
-
-inline val Scene.maxOffsetDistanceYPointsBeforeEdgeVisible: Float
-    get() = (2f - 2f / zoom) / 2f
-
-inline val Scene.maxOffsetDistanceYBeforeEdgeVisiblePx: Float
-    get() = maxOffsetDistanceYPointsBeforeEdgeVisible * image.height
-
-inline val Scene.maxOffsetDistanceBeforeEdgeVisiblePx: Float
-    get() = maxOffsetDistanceXPointsBeforeEdgeVisible * image.width
-
-inline val Scene.imageOffsetXPoints: Float
-    get() = maxOffsetDistanceXPointsBeforeEdgeVisible * -imageOffset.x / (maxOffsetDistanceBeforeEdgeVisiblePx.takeIf { it != 0f }
-        ?: image.width.toFloat())
-
-inline val Scene.consumedOffsetXPoints: Float
-    get() = maxOffsetDistanceXPointsBeforeEdgeVisible + imageOffsetXPoints
-
-inline val Scene.imageOffsetYPoints: Float
-    get() = maxOffsetDistanceYPointsBeforeEdgeVisible * -imageOffset.y / (maxOffsetDistanceYBeforeEdgeVisiblePx.takeIf { it != 0f }
-        ?: image.height.toFloat())
-
-inline val Scene.consumedOffsetYPoints: Float
-    get() = maxOffsetDistanceYPointsBeforeEdgeVisible + imageOffsetYPoints
 
 context (Scene)
         private fun MotionEvent.toImagePoint(sceneOffset: Offset): Point {
@@ -280,31 +247,6 @@ context (Scene)
         Point(imageX, yImage)
     }
 }
-
-/**
- * Returns how many points were consumed by viewport when x coordinate is [viewportX]
- * Return value in range 0..2
- *
- * Formula - consumedPoints = ((x / screen_viewport_width) * 2 * ratio) / zoom
- */
-private fun Scene.consumedPointsX(viewportX: Float): Float = 2 * image.ratio * (viewportX / window.width) / zoom
-
-/**
- * Returns how many points were consumed by viewport when y coordinate is [viewportY]
- * Return value in range 0..2
- *
- * Formula - consumedPoints = ((y / screen_viewport_width) * 2) / zoom
- **/
-private fun Scene.consumedPointsY(viewportY: Float): Float =
-    2 * (viewportY / window.height) / zoom
-
-/**
- * Converts [point] in range -1..1 to image coordinates in pixels in range [0..viewport]
- */
-private fun toImageCoordinatesPx(
-    point: Float,
-    viewport: Int,
-): Float = (viewport * point / 2)//.roundToInt()
 
 @Suppress("NOTHING_TO_INLINE")
 private inline operator fun Rect.contains(
