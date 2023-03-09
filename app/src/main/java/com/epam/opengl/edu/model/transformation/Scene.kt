@@ -11,13 +11,13 @@ import com.epam.opengl.edu.model.geometry.isOnBottomEdgeOf
 import com.epam.opengl.edu.model.geometry.isOnLeftEdgeOf
 import com.epam.opengl.edu.model.geometry.isOnRightEdgeOf
 import com.epam.opengl.edu.model.geometry.isOnTopEdgeOf
+import com.epam.opengl.edu.model.geometry.isPortrait
 import com.epam.opengl.edu.model.geometry.moveBottomEdgeWithinBounds
 import com.epam.opengl.edu.model.geometry.moveLeftEdgeWithinBounds
 import com.epam.opengl.edu.model.geometry.moveRightEdgeWithinBounds
 import com.epam.opengl.edu.model.geometry.moveTopEdgeWithinBounds
 import com.epam.opengl.edu.model.geometry.offsetByWithinBounds
 import com.epam.opengl.edu.model.geometry.plus
-import com.epam.opengl.edu.model.geometry.size
 import com.epam.opengl.edu.model.geometry.width
 import com.epam.opengl.edu.model.geometry.x
 import com.epam.opengl.edu.model.geometry.y
@@ -72,8 +72,8 @@ class Scene(
      * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
      */
     var selection = Rect(
-        topLeft = Point(),
-        bottomRight = Point(viewport.width, viewport.height)
+        topLeft = Point(307, 215),
+        bottomRight = Point(viewport.width - 276, viewport.height - 142)
     )
         private set
 
@@ -180,20 +180,20 @@ class Scene(
 
 }
 
-fun Scene.onCropped(): Scene = Scene(
-    viewport = viewport,
-    texture = croppedTextureSizeInViewportPerspective,
-    cropOriginOffset = cropOriginOffset + consumedTextureOffset
-)
+fun Scene.onCropped(): Scene {
+    return Scene(
+        viewport = croppedTextureSize,
+        texture = croppedTextureSize,
+    )
+}
 
 /**
  * Texture size given current [Scene.selection] and [Scene.viewport]
  */
-inline val Scene.croppedTextureSizeInViewportPerspective: Size
-    // new width = width * (selection.width / viewportWidth)
+inline val Scene.croppedTextureSize: Size
     get() = Size(
-        (texture.width * (selection.size.width.toFloat() / viewport.width)).roundToInt(),
-        (texture.height * (selection.size.height.toFloat() / viewport.height)).roundToInt()
+        viewport.width - (selection.topLeft.x + viewport.width - selection.bottomRight.x),
+        viewport.height - (selection.topLeft.y + viewport.height - selection.bottomRight.y)
     )
 
 private inline val Scene.consumedTextureOffset: Offset
@@ -250,11 +250,41 @@ inline val Scene.consumedOffsetYPoints: Float
  * Formula y = (viewport * (consumed_window_points + maxOffsetDistanceYPointsBeforeEdgeVisible + textureOffsetYPoints)) / 2
  */
 context (Scene)
-        private fun MotionEvent.toTexturePoint(): Point =
-    Point(
-        x = (toTextureCoordinatesPx(consumedOffsetXPoints + consumedPointsX(x), viewport.width)).roundToInt(),
-        y = (toTextureCoordinatesPx(consumedOffsetYPoints + consumedPointsY(y), viewport.height)).roundToInt()
-    )
+        private fun MotionEvent.toTexturePoint(): Point {
+
+    return if (viewport.isPortrait) {
+        val viewport2WindowHeight = viewport.height.toFloat() / window.height
+        // how many times texture was stretched to fit the window height
+        val scaleFactor = 1f / viewport2WindowHeight
+        // convert texture width to width that it occupies inside window,
+        // it might be bigger than window width itself
+        val scaledWidthInWindow = scaleFactor * viewport.width
+        val offsetX = window.width - scaledWidthInWindow
+        val halfOffsetPx = offsetX * 0.5f
+        val xWindow = x - halfOffsetPx
+        val xTexture = (viewport2WindowHeight * xWindow).roundToInt()
+        val yTexture = (y * viewport2WindowHeight).roundToInt()
+
+        Point(xTexture, yTexture)
+    } else {
+        // in this case the texture occupies window.ratio pixels,
+        // (1f - window.ratio) won't be drawn and go to offset.
+        // 1f == texture.width
+        // window.ratio == visible texture on screen px
+        val onscreenTextureWidthPx = windowRatio * viewport.width
+        val offscreenTextureWidthPx = viewport.width - onscreenTextureWidthPx
+        val visible2WindowWidth = onscreenTextureWidthPx / window.width
+        val textureX = (x * visible2WindowWidth + 0.5f * offscreenTextureWidthPx).roundToInt()
+
+        val scaleFactor = 1f / visible2WindowWidth
+        val scaledHeightInWindow = scaleFactor * viewport.height
+        val offsetY = window.height - scaledHeightInWindow
+        val yWindow = y - 0.5f * offsetY
+        val yTexture = (visible2WindowWidth * yWindow).roundToInt()
+
+        Point(textureX, yTexture)
+    }
+}
 
 val window = Size(
     width = 1080,
