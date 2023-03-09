@@ -5,8 +5,6 @@ value class Point private constructor(
     val value: Long,
 ) {
     constructor(x: Int, y: Int) : this(packInts(x, y))
-    constructor() : this(0)
-
     override fun toString(): String {
         return "Point(x=$x, y=$y)"
     }

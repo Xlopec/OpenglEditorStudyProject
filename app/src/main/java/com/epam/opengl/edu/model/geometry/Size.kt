@@ -21,3 +21,6 @@ inline val Size.width: Int
 
 inline val Size.height: Int
     get() = unpackInt2(value)
+
+inline val Size.isPortrait: Boolean
+    get() = width < height

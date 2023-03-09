@@ -13,10 +13,8 @@ import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.geometry.height
 import com.epam.opengl.edu.model.geometry.size
 import com.epam.opengl.edu.model.geometry.width
-import com.epam.opengl.edu.model.transformation.textureOffsetXPoints
-import com.epam.opengl.edu.model.transformation.textureOffsetYPoints
-import com.epam.opengl.edu.model.transformation.viewportRatio
 import com.epam.opengl.edu.model.transformation.window
+import com.epam.opengl.edu.model.transformation.windowRatio
 import com.epam.opengl.edu.ui.gl.Textures.Companion.PingTextureIdx
 import com.epam.opengl.edu.ui.gl.Textures.Companion.PongTextureIdx
 import java.nio.ByteBuffer
@@ -42,13 +40,13 @@ class AppGLRenderer(
 
             val imageChanged = value != null && old?.image != value.image
             val viewportChanged =
-                value != null && value.displayTransformations.scene.viewport != old?.displayTransformations?.scene?.viewport
+                value != null && old == null && value.displayTransformations.scene.texture != old?.displayTransformations?.scene?.texture
             val transformationsChanged = value?.displayTransformations != old?.displayTransformations
             val cropSelectionChanged = value?.displayCropSelection != old?.displayCropSelection
 
             if (viewportChanged) {
                 view.queueEvent {
-                    bindBuffers(value!!.displayTransformations.scene.viewport, value.image)
+                    bindBuffers(window, value!!.image)
                 }
             } else if (imageChanged) {
                 view.queueEvent {
@@ -95,10 +93,19 @@ class AppGLRenderer(
     private val viewMatrix = FloatArray(16)
     private val viewTransformation = ViewTransformation(context, verticesBuffer, textureBuffer)
     private val cropTransformation = CropTransformation(context, verticesBuffer, textureBuffer, textures)
+
     @Volatile
     private var cropRequested = false
 
+    private var cooldown = 0L
+
     fun requestCrop() {
+        println("Request crop")
+        if (System.currentTimeMillis() - cooldown < 100L) {
+            return
+        }
+
+        cooldown = System.currentTimeMillis()
         require(!cropRequested) { "Requesting crop during cropping might lead to state inconsistency bugs" }
         cropRequested = true
         view.requestRender()
@@ -151,10 +158,10 @@ class AppGLRenderer(
             )
         }
 
-        val ratio = transformations.scene.viewportRatio
-        val zoom = transformations.scene.zoom
-        val consumedOffsetX = transformations.scene.textureOffsetXPoints
-        val consumedOffsetY = transformations.scene.textureOffsetYPoints
+        val ratio = windowRatio//transformations.scene.viewportRatio
+        val zoom = 1f//transformations.scene.zoom
+        val consumedOffsetX = 0f//transformations.scene.textureOffsetXPoints
+        val consumedOffsetY = 0f//transformations.scene.textureOffsetYPoints
 
         Matrix.frustumM(
             /* m = */ projectionMatrix,
@@ -170,7 +177,7 @@ class AppGLRenderer(
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1f, 0f)
         // Calculate the projection and view transformation
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-        viewTransformation.render(vPMatrix, 0, textures.cropTexture)
+        viewTransformation.render(vPMatrix, 0, textures.cropTexture, transformations.scene.texture)
 
         if (cropWasRequested) {
             onCropped()
@@ -213,7 +220,7 @@ class AppGLRenderer(
         viewport: Size,
         image: Uri,
     ) {
-        GLES31.glViewport(0, 0, window.width, window.height)
+        GLES31.glViewport(0, 0, viewport.width, viewport.height)
         GLES31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
         GLES31.glEnable(GLES31.GL_BLEND)
         GLES31.glBlendFunc(GLES31.GL_SRC_ALPHA, GLES31.GL_ONE_MINUS_SRC_ALPHA)
@@ -246,10 +253,10 @@ class AppGLRenderer(
             require(textureIndex == PingTextureIdx || textureIndex == PongTextureIdx) {
                 "incorrect texture index, was $textureIndex"
             }
-            setupFrameBuffer(window, textures[textureIndex], frameBuffers[frameBufferIndex])
+            setupFrameBuffer(viewport, textures[textureIndex], frameBuffers[frameBufferIndex])
         }
 
-        setupFrameBuffer(window, textures.cropTexture, frameBuffers.cropFrameBuffer)
+        setupFrameBuffer(viewport, textures.cropTexture, frameBuffers.cropFrameBuffer)
     }
 
     private fun setupFrameBuffer(

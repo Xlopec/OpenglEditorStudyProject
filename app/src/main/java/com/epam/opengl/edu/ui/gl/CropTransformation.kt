@@ -73,17 +73,17 @@ class CropTransformation(
             )
         }
         val rawOffsetLeft = scene.selection.topLeft.x
-        val rawOffsetRight = scene.viewport.width - scene.selection.bottomRight.x
+        val rawOffsetRight = scene.texture.width - scene.selection.bottomRight.x
 
-        val w2vRatio = window.width / scene.viewport.width.toFloat()
-        val h2vRatio = window.height / scene.viewport.height.toFloat()
+        val w2vRatio = window.width / scene.texture.width.toFloat()
+        val h2vRatio = window.height / scene.texture.height.toFloat()
 
         val offsetLeftX = (rawOffsetLeft * w2vRatio).roundToInt()
         val offsetRightX = (rawOffsetRight * w2vRatio).roundToInt()
         val newWindowWidth = window.width - offsetLeftX - offsetRightX
 
         val offsetTopY = (scene.selection.topLeft.y * h2vRatio).roundToInt()
-        val offsetBottomY = ((scene.viewport.height - scene.selection.bottomRight.y) * h2vRatio).roundToInt()
+        val offsetBottomY = ((scene.texture.height - scene.selection.bottomRight.y) * h2vRatio).roundToInt()
 
         val newWindowHeight = window.height - offsetTopY - offsetBottomY
 
@@ -142,7 +142,7 @@ class CropTransformation(
         render(fbo) { _, cropRegionHandle, borderWidthHandle, pointerHandle ->
             val scene = transformations.scene
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / scene.viewport.width)
+            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / scene.texture.width)
 
             with(scene) {
                 val (left, top) = scene.selection.topLeft.toNormalized()
@@ -167,7 +167,7 @@ class CropTransformation(
             val pointer = with(transformations.scene) { userInput.toNormalized() }
             GLES31.glUniform2f(pointerHandle, pointer.x, 1f - pointer.y)
             GLES31.glUniform4f(cropRegionHandle, 0f, 0f, 0f, 0f)
-            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / transformations.scene.viewport.width)
+            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / transformations.scene.texture.width)
         }
     }
 

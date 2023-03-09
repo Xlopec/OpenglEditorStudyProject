@@ -62,16 +62,16 @@ fun EditMenu?.updateViewportAndImageOrCreate(
 
 fun EditMenu.updateViewportAndImage(
     newImage: Uri,
-    newViewport: Size,
+    newTexture: Size,
 ): EditMenu {
     val updated = if (newImage != image) {
-        copy(image = newImage).updateTransformation(Scene(newViewport))
+        copy(image = newImage).updateTransformation(Scene(newTexture))
     } else {
         this
     }
 
-    return if (newImage == image && newViewport != displayTransformations.scene.viewport) {
-        updated.updateTransformation(Scene(newViewport))
+    return if (newImage == image && newTexture != displayTransformations.scene.texture) {
+        updated.updateTransformation(Scene(newTexture))
     } else {
         updated
     }
