@@ -70,7 +70,7 @@ fun EditMenu.updateViewportAndImage(
         this
     }
 
-    return if (newImage == image && newTexture != displayTransformations.scene.texture) {
+    return if (newImage == image && newTexture != displayTransformations.scene.image) {
         updated.updateTransformation(Scene(newTexture))
     } else {
         updated

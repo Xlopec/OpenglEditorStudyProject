@@ -11,7 +11,6 @@ import com.epam.opengl.edu.model.geometry.isOnBottomEdgeOf
 import com.epam.opengl.edu.model.geometry.isOnLeftEdgeOf
 import com.epam.opengl.edu.model.geometry.isOnRightEdgeOf
 import com.epam.opengl.edu.model.geometry.isOnTopEdgeOf
-import com.epam.opengl.edu.model.geometry.isPortrait
 import com.epam.opengl.edu.model.geometry.moveBottomEdgeWithinBounds
 import com.epam.opengl.edu.model.geometry.moveLeftEdgeWithinBounds
 import com.epam.opengl.edu.model.geometry.moveRightEdgeWithinBounds
@@ -30,15 +29,19 @@ import kotlin.math.roundToInt
  */
 class Scene(
     /**
-     * Current texture size
+     * Current image size
      */
-    val texture: Size,
+    val image: Size,
     /**
-     * Texture offset accumulated relative to the left side of crop rect.
+     * Image offset accumulated relative to the left side of crop rect.
      * This is needed to account invisible offset accumulated after each crop because
-     * we need to calculate offset in coordinate system of the original texture
+     * we need to calculate offset in coordinate system of the original image
      */
     val cropOriginOffset: Offset = Offset(0, 0),
+    val window: Size = Size(
+        width = 1080,
+        height = 1584 //2054
+    ),
 ) : Transformation {
 
     companion object {
@@ -47,13 +50,13 @@ class Scene(
     }
 
     /**
-     * Texture offset in viewport coordinate system
+     * Image offset in viewport coordinate system
      */
-    var textureOffset = Offset()
+    var imageOffset = Offset()
         private set
 
     /**
-     * User input in texture coordinate system
+     * User input in image coordinate system
      */
     var userInput = Point(0, 0)
         private set
@@ -63,7 +66,7 @@ class Scene(
      */
     var selection = Rect(
         topLeft = Point(0, 0),
-        bottomRight = Point(texture.width, texture.height)
+        bottomRight = Point(image.width, image.height)
     )
         private set
 
@@ -73,13 +76,13 @@ class Scene(
     private var oldSpan = Float.NaN
 
     val zoom: Float
-        get() = (currentSpan + texture.width) / texture.width.toFloat()
+        get() = (currentSpan + image.width) / image.width.toFloat()
 
     fun onTouch(
         event: MotionEvent,
         isCropSelectionMode: Boolean,
     ) {
-        userInput = event.toTexturePoint()
+        userInput = event.toImagePoint()
         println("Input $userInput")
         val offset = Offset(userInput.x - previousInput.x, userInput.y - previousInput.y)
         previousInput = userInput
@@ -132,7 +135,7 @@ class Scene(
         action: Int,
         isCropSelectionMode: Boolean,
         offset: Offset,
-    ) = with(texture) {
+    ) = with(image) {
         when (action) {
             MotionEvent.ACTION_MOVE -> {
                 when {
@@ -157,7 +160,7 @@ class Scene(
                     }
 
                     else -> {
-                        textureOffset += offset
+                        imageOffset += offset
                     }
                 }
             }
@@ -172,115 +175,98 @@ class Scene(
 
 fun Scene.onCropped(): Scene {
     return Scene(
-        texture = croppedTextureSize,
+        image = croppedImageSize,
     )
 }
 
 /**
- * Texture size given current [Scene.selection] and [Scene.texture]
+ * Image size given current [Scene.selection] and [Scene.image]
  */
-inline val Scene.croppedTextureSize: Size
+inline val Scene.croppedImageSize: Size
     get() = Size(
-        texture.width - (selection.topLeft.x + texture.width - selection.bottomRight.x),
-        texture.height - (selection.topLeft.y + texture.height - selection.bottomRight.y)
+        image.width - (selection.topLeft.x + image.width - selection.bottomRight.x),
+        image.height - (selection.topLeft.y + image.height - selection.bottomRight.y)
     )
 
-private inline val Scene.consumedTextureOffset: Offset
+private inline val Scene.consumedImageOffset: Offset
     get() = Offset(
-        x = (selection.topLeft.x * texture.width.toFloat() / texture.width).roundToInt(),
-        y = (selection.topLeft.y * texture.height.toFloat() / texture.height).roundToInt()
+        x = (selection.topLeft.x * image.width.toFloat() / image.width).roundToInt(),
+        y = (selection.topLeft.y * image.height.toFloat() / image.height).roundToInt()
     )
-
-val Scene.textureRatio: Float
-    get() = texture.width.toFloat() / texture.height
-
-val Scene.viewportRatio: Float
-    get() = texture.width.toFloat() / texture.height
 
 context (Scene)
         @Suppress("NOTHING_TO_INLINE")
         inline fun Point.toNormalized(): NormalizedPoint =
     NormalizedPoint.safeOf(
         // Puts x in range [0 .. 1f]
-        x = x / texture.width.toFloat(),
+        x = x / image.width.toFloat(),
         // Puts y in range [0 .. 1f]
-        y = y / texture.height.toFloat()
+        y = y / image.height.toFloat()
     )
 
 
 inline val Scene.maxOffsetDistanceXPointsBeforeEdgeVisible: Float
-    get() = 1 - viewportRatio + (2 * viewportRatio - 2 * viewportRatio / zoom) / 2
+    get() = 1 - image.ratio + (2 * image.ratio - 2 * image.ratio / zoom) / 2
 
 inline val Scene.maxOffsetDistanceYPointsBeforeEdgeVisible: Float
     get() = (2f - 2f / zoom) / 2f
 
 inline val Scene.maxOffsetDistanceYBeforeEdgeVisiblePx: Float
-    get() = maxOffsetDistanceYPointsBeforeEdgeVisible * texture.height
+    get() = maxOffsetDistanceYPointsBeforeEdgeVisible * image.height
 
 inline val Scene.maxOffsetDistanceBeforeEdgeVisiblePx: Float
-    get() = maxOffsetDistanceXPointsBeforeEdgeVisible * texture.width
+    get() = maxOffsetDistanceXPointsBeforeEdgeVisible * image.width
 
-inline val Scene.textureOffsetXPoints: Float
-    get() = maxOffsetDistanceXPointsBeforeEdgeVisible * -textureOffset.x / (maxOffsetDistanceBeforeEdgeVisiblePx.takeIf { it != 0f }
-        ?: texture.width.toFloat())
+inline val Scene.imageOffsetXPoints: Float
+    get() = maxOffsetDistanceXPointsBeforeEdgeVisible * -imageOffset.x / (maxOffsetDistanceBeforeEdgeVisiblePx.takeIf { it != 0f }
+        ?: image.width.toFloat())
 
 inline val Scene.consumedOffsetXPoints: Float
-    get() = maxOffsetDistanceXPointsBeforeEdgeVisible + textureOffsetXPoints
+    get() = maxOffsetDistanceXPointsBeforeEdgeVisible + imageOffsetXPoints
 
-inline val Scene.textureOffsetYPoints: Float
-    get() = maxOffsetDistanceYPointsBeforeEdgeVisible * -textureOffset.y / (maxOffsetDistanceYBeforeEdgeVisiblePx.takeIf { it != 0f }
-        ?: texture.height.toFloat())
+inline val Scene.imageOffsetYPoints: Float
+    get() = maxOffsetDistanceYPointsBeforeEdgeVisible * -imageOffset.y / (maxOffsetDistanceYBeforeEdgeVisiblePx.takeIf { it != 0f }
+        ?: image.height.toFloat())
 
 inline val Scene.consumedOffsetYPoints: Float
-    get() = maxOffsetDistanceYPointsBeforeEdgeVisible + textureOffsetYPoints
+    get() = maxOffsetDistanceYPointsBeforeEdgeVisible + imageOffsetYPoints
 
-/**
- * Formula x = (viewport * (consumed_window_points + maxOffsetDistanceXPointsBeforeEdgeVisible + textureOffsetXPoints)) / 2
- * Formula y = (viewport * (consumed_window_points + maxOffsetDistanceYPointsBeforeEdgeVisible + textureOffsetYPoints)) / 2
- */
 context (Scene)
-        private fun MotionEvent.toTexturePoint(): Point {
+        private fun MotionEvent.toImagePoint(): Point {
 
-    return if (texture.isPortrait) {
-        val viewport2WindowHeight = texture.height.toFloat() / window.height
-        // how many times texture was stretched to fit the window height
+    return if (image.isPortrait) {
+        val viewport2WindowHeight = image.height.toFloat() / window.height
+        // how many times image was stretched to fit the window height
         val scaleFactor = 1f / viewport2WindowHeight
-        // convert texture width to width that it occupies inside window,
+        // convert image width to width that it occupies inside window,
         // it might be bigger than window width itself
-        val scaledWidthInWindow = scaleFactor * texture.width
+        val scaledWidthInWindow = scaleFactor * image.width
         val offsetX = window.width - scaledWidthInWindow
         val halfOffsetPx = offsetX * 0.5f
         val xWindow = x - halfOffsetPx
-        val xTexture = (viewport2WindowHeight * xWindow).roundToInt()
-        val yTexture = (y * viewport2WindowHeight).roundToInt()
+        val xImage = (viewport2WindowHeight * xWindow).roundToInt()
+        val yImage = (y * viewport2WindowHeight).roundToInt()
 
-        Point(xTexture, yTexture)
+        Point(xImage, yImage)
     } else {
-        // in this case the texture occupies window.ratio pixels,
+        // in this case the image occupies window.ratio pixels,
         // (1f - window.ratio) won't be drawn and go to offset.
-        // 1f == texture.width
-        // window.ratio == visible texture on screen px
-        val onscreenTextureWidthPx = windowRatio * texture.width
-        val offscreenTextureWidthPx = texture.width - onscreenTextureWidthPx
-        val visible2WindowWidth = onscreenTextureWidthPx / window.width
-        val textureX = (x * visible2WindowWidth + 0.5f * offscreenTextureWidthPx).roundToInt()
+        // 1f == image.width
+        // window.ratio == visible image on screen px
+        val onscreenImageWidthPx = window.ratio * image.width
+        val offscreenImageWidthPx = image.width - onscreenImageWidthPx
+        val visible2WindowWidth = onscreenImageWidthPx / window.width
+        val imageX = (x * visible2WindowWidth + 0.5f * offscreenImageWidthPx).roundToInt()
 
         val scaleFactor = 1f / visible2WindowWidth
-        val scaledHeightInWindow = scaleFactor * texture.height
+        val scaledHeightInWindow = scaleFactor * image.height
         val offsetY = window.height - scaledHeightInWindow
         val yWindow = y - 0.5f * offsetY
-        val yTexture = (visible2WindowWidth * yWindow).roundToInt()
+        val yImage = (visible2WindowWidth * yWindow).roundToInt()
 
-        Point(textureX, yTexture)
+        Point(imageX, yImage)
     }
 }
-
-val window = Size(
-    width = 1080,
-    height = 1584 //2054
-)
-
-val windowRatio get() = window.width.toFloat() / window.height.toFloat()
 
 /**
  * Returns how many points were consumed by viewport when x coordinate is [viewportX]
@@ -288,7 +274,7 @@ val windowRatio get() = window.width.toFloat() / window.height.toFloat()
  *
  * Formula - consumedPoints = ((x / screen_viewport_width) * 2 * ratio) / zoom
  */
-private fun Scene.consumedPointsX(viewportX: Float): Float = 2 * viewportRatio * (viewportX / window.width) / zoom
+private fun Scene.consumedPointsX(viewportX: Float): Float = 2 * image.ratio * (viewportX / window.width) / zoom
 
 /**
  * Returns how many points were consumed by viewport when y coordinate is [viewportY]
@@ -300,9 +286,9 @@ private fun Scene.consumedPointsY(viewportY: Float): Float =
     2 * (viewportY / window.height) / zoom
 
 /**
- * Converts [point] in range -1..1 to texture coordinates in pixels in range [0..viewport]
+ * Converts [point] in range -1..1 to image coordinates in pixels in range [0..viewport]
  */
-private fun toTextureCoordinatesPx(
+private fun toImageCoordinatesPx(
     point: Float,
     viewport: Int,
 ): Float = (viewport * point / 2)//.roundToInt()
@@ -311,3 +297,9 @@ private fun toTextureCoordinatesPx(
 private inline operator fun Rect.contains(
     point: Point,
 ): Boolean = point.x in topLeft.x..bottomRight.x && point.y in topLeft.y..bottomRight.y
+
+inline val Size.isPortrait: Boolean
+    get() = width < height
+
+inline val Size.ratio: Float
+    get() = width.toFloat() / height

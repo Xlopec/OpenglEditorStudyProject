@@ -13,8 +13,7 @@ import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.geometry.height
 import com.epam.opengl.edu.model.geometry.size
 import com.epam.opengl.edu.model.geometry.width
-import com.epam.opengl.edu.model.transformation.window
-import com.epam.opengl.edu.model.transformation.windowRatio
+import com.epam.opengl.edu.model.transformation.ratio
 import com.epam.opengl.edu.ui.gl.Textures.Companion.PingTextureIdx
 import com.epam.opengl.edu.ui.gl.Textures.Companion.PongTextureIdx
 import java.nio.ByteBuffer
@@ -40,13 +39,13 @@ class AppGLRenderer(
 
             val imageChanged = value != null && old?.image != value.image
             val viewportChanged =
-                value != null && old == null && value.displayTransformations.scene.texture != old?.displayTransformations?.scene?.texture
+                value != null && old == null && value.displayTransformations.scene.image != old?.displayTransformations?.scene?.image
             val transformationsChanged = value?.displayTransformations != old?.displayTransformations
             val cropSelectionChanged = value?.displayCropSelection != old?.displayCropSelection
 
             if (viewportChanged) {
                 view.queueEvent {
-                    bindBuffers(window, value!!.image)
+                    bindBuffers(value!!.displayTransformations.scene.window, value.image)
                 }
             } else if (imageChanged) {
                 view.queueEvent {
@@ -158,7 +157,7 @@ class AppGLRenderer(
             )
         }
 
-        val ratio = windowRatio//transformations.scene.viewportRatio
+        val ratio = transformations.scene.window.ratio//transformations.scene.viewportRatio
         val zoom = 1f//transformations.scene.zoom
         val consumedOffsetX = 0f//transformations.scene.textureOffsetXPoints
         val consumedOffsetY = 0f//transformations.scene.textureOffsetYPoints
@@ -177,7 +176,7 @@ class AppGLRenderer(
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1f, 0f)
         // Calculate the projection and view transformation
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-        viewTransformation.render(vPMatrix, 0, textures.cropTexture, transformations.scene.texture)
+        viewTransformation.render(vPMatrix, 0, textures.cropTexture, transformations.scene.image)
 
         if (cropWasRequested) {
             onCropped()
