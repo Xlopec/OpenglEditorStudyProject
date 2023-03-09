@@ -2,7 +2,6 @@
 precision mediump float;
 
 uniform sampler2D uTexture;
-uniform vec2 offset;
 // top left; bottom right (x, y)
 uniform vec4 cropRegion;
 uniform float borderWidth;
@@ -66,8 +65,8 @@ void main()
     } else if (drawSelectionRect() && rectLine()) {
         outColor = cropRegionLineColor;
     } else if (drawSelectionRect() && rectContent()) {
-        outColor = tint(cropRegionContentTint, texture(uTexture, vTexPosition + offset));
+        outColor = tint(cropRegionContentTint, texture(uTexture, vTexPosition));
     } else {
-        outColor = texture(uTexture, vTexPosition + offset);
+        outColor = texture(uTexture, vTexPosition);
     }
 }

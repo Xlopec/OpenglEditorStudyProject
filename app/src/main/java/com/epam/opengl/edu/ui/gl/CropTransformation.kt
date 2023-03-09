@@ -46,7 +46,7 @@ class CropTransformation(
         texture: Int,
     ) {
         val scene = transformations.scene
-        render(fbo) { offsetHandle, cropRegionHandle, _, _ ->
+        render(fbo) { cropRegionHandle, _, _ ->
 
             // resize texture bound to this framebuffer
             /*GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.cropTexture)
@@ -64,13 +64,6 @@ class CropTransformation(
 
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
             GLES31.glUniform4f(cropRegionHandle, 0f, 0f, 0f, 0f)
-            GLES31.glUniform2f(
-                offsetHandle,
-                // plus origin offset since we're working with original texture!
-                0f,//(scene.cropOriginOffset.x + scene.selection.topLeft.x * (scene.texture.width.toFloat() / scene.viewport.width)) / scene.viewport.width.toFloat(),
-                // invert sign since origin for Y is bottom
-                0f// -(scene.cropOriginOffset.y + scene.selection.topLeft.y * (scene.texture.height.toFloat() / scene.viewport.height)) / scene.viewport.height
-            )
         }
         val rawOffsetLeft = scene.selection.topLeft.x
         val rawOffsetRight = scene.texture.width - scene.selection.bottomRight.x
@@ -119,17 +112,6 @@ class CropTransformation(
             buffer
         )*/
 
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-        val offsetHandle = GLES31.glGetUniformLocation(program, "offset")
-
-        GLES31.glUniform2f(
-            offsetHandle,
-            // plus origin offset since we're working with original texture!
-            0f,
-            // invert sign since origin for Y is bottom
-            0f
-        )
-
         bitmap.recycle()
     }
 
@@ -139,7 +121,7 @@ class CropTransformation(
         fbo: Int,
         texture: Int,
     ) {
-        render(fbo) { _, cropRegionHandle, borderWidthHandle, pointerHandle ->
+        render(fbo) { cropRegionHandle, borderWidthHandle, pointerHandle ->
             val scene = transformations.scene
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
             GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / scene.texture.width)
@@ -162,7 +144,7 @@ class CropTransformation(
         transformations: Transformations,
     ) {
 
-        render(fbo) { _, cropRegionHandle, borderWidthHandle, pointerHandle ->
+        render(fbo) { cropRegionHandle, borderWidthHandle, pointerHandle ->
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
             val pointer = with(transformations.scene) { userInput.toNormalized() }
             GLES31.glUniform2f(pointerHandle, pointer.x, 1f - pointer.y)
@@ -175,7 +157,7 @@ class CropTransformation(
             @OptIn(ExperimentalContracts::class)
             private /*inline*/ fun render(
         fbo: Int,
-        strategy: (offsetHandle: Int, cropRegionHandle: Int, borderWidthHandle: Int, pointerHandle: Int) -> Unit,
+        strategy: (cropRegionHandle: Int, borderWidthHandle: Int, pointerHandle: Int) -> Unit,
     ) {
         contract {
             callsInPlace(strategy, InvocationKind.EXACTLY_ONCE)
@@ -187,14 +169,13 @@ class CropTransformation(
         val positionHandle = GLES31.glGetAttribLocation(program, "aPosition")
         val texturePositionHandle = GLES31.glGetAttribLocation(program, "aTexPosition")
         val pointerHandle = GLES31.glGetUniformLocation(program, "pointer")
-        val offsetHandle = GLES31.glGetUniformLocation(program, "offset")
         val cropRegionHandle = GLES31.glGetUniformLocation(program, "cropRegion")
         val borderWidthHandle = GLES31.glGetUniformLocation(program, "borderWidth")
 
         GLES31.glVertexAttribPointer(texturePositionHandle, 2, GLES31.GL_FLOAT, false, 0, textureCoordinates)
         GLES31.glEnableVertexAttribArray(texturePositionHandle)
 
-        strategy(offsetHandle, cropRegionHandle, borderWidthHandle, pointerHandle)
+        strategy(cropRegionHandle, borderWidthHandle, pointerHandle)
 
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
         GLES31.glEnableVertexAttribArray(positionHandle)
