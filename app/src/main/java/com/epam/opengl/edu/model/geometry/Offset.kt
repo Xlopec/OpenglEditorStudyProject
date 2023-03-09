@@ -25,3 +25,7 @@ inline val Offset.x: Int
 
 inline val Offset.y: Int
     get() = unpackInt2(value)
+
+operator fun Offset.component1(): Int = x
+
+operator fun Offset.component2(): Int = y

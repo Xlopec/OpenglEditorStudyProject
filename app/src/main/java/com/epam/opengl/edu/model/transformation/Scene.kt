@@ -6,6 +6,8 @@ import com.epam.opengl.edu.model.geometry.Offset
 import com.epam.opengl.edu.model.geometry.Point
 import com.epam.opengl.edu.model.geometry.Rect
 import com.epam.opengl.edu.model.geometry.Size
+import com.epam.opengl.edu.model.geometry.component1
+import com.epam.opengl.edu.model.geometry.component2
 import com.epam.opengl.edu.model.geometry.height
 import com.epam.opengl.edu.model.geometry.isOnBottomEdgeOf
 import com.epam.opengl.edu.model.geometry.isOnLeftEdgeOf
@@ -33,12 +35,6 @@ class Scene(
      */
     val image: Size,
     val window: Size,
-    /**
-     * Image offset accumulated relative to the left side of crop rect.
-     * This is needed to account invisible offset accumulated after each crop because
-     * we need to calculate offset in coordinate system of the original image
-     */
-    val cropOriginOffset: Offset = Offset(0, 0),
 ) : Transformation {
 
     companion object {
@@ -49,7 +45,11 @@ class Scene(
     /**
      * Image offset in viewport coordinate system
      */
+    @Deprecated("remove")
     var imageOffset = Offset()
+        private set
+
+    var sceneOffset = Offset()
         private set
 
     /**
@@ -57,6 +57,8 @@ class Scene(
      */
     var userInput = Point(0, 0)
         private set
+
+    private var previousP = Point(0, 0)
 
     /**
      * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
@@ -79,7 +81,16 @@ class Scene(
         event: MotionEvent,
         isCropSelectionMode: Boolean,
     ) {
-        userInput = event.toImagePoint()
+        val point = Point(event.x.roundToInt(), event.y.roundToInt())
+
+        val rawOffsetDelta = Offset(point.x - previousP.x, point.y - previousP.y)
+        previousP = point
+
+        if (event.action == MotionEvent.ACTION_MOVE) {
+            sceneOffset += rawOffsetDelta
+        }
+
+        userInput = event.toImagePoint(sceneOffset)
         println("Input $userInput")
         val offset = Offset(userInput.x - previousInput.x, userInput.y - previousInput.y)
         previousInput = userInput
@@ -87,7 +98,7 @@ class Scene(
         if (event.pointerCount > 1) {
             handleZoom(event)
         } else {
-            handleMovement(event.action, isCropSelectionMode, offset)
+            handleMovement(event.action, isCropSelectionMode, offset, rawOffsetDelta, userInput)
         }
     }
 
@@ -132,6 +143,8 @@ class Scene(
         action: Int,
         isCropSelectionMode: Boolean,
         offset: Offset,
+        rawOffset: Offset,
+        userInput: Point,
     ) = with(image) {
         when (action) {
             MotionEvent.ACTION_MOVE -> {
@@ -158,6 +171,7 @@ class Scene(
 
                     else -> {
                         imageOffset += offset
+                        //sceneOffset += rawOffset
                     }
                 }
             }
@@ -230,7 +244,8 @@ inline val Scene.consumedOffsetYPoints: Float
     get() = maxOffsetDistanceYPointsBeforeEdgeVisible + imageOffsetYPoints
 
 context (Scene)
-        private fun MotionEvent.toImagePoint(): Point {
+        private fun MotionEvent.toImagePoint(sceneOffset: Offset): Point {
+    val (osX, osY) = sceneOffset
 
     return if (image.isPortrait) {
         val viewport2WindowHeight = image.height.toFloat() / window.height
@@ -241,9 +256,9 @@ context (Scene)
         val scaledWidthInWindow = scaleFactor * image.width
         val offsetX = window.width - scaledWidthInWindow
         val halfOffsetPx = offsetX * 0.5f
-        val xWindow = x - halfOffsetPx
+        val xWindow = x - halfOffsetPx - osX
         val xImage = (viewport2WindowHeight * xWindow).roundToInt()
-        val yImage = (y * viewport2WindowHeight).roundToInt()
+        val yImage = ((y - osY) * viewport2WindowHeight).roundToInt()
 
         Point(xImage, yImage)
     } else {
@@ -254,12 +269,12 @@ context (Scene)
         val onscreenImageWidthPx = window.ratio * image.width
         val offscreenImageWidthPx = image.width - onscreenImageWidthPx
         val visible2WindowWidth = onscreenImageWidthPx / window.width
-        val imageX = (x * visible2WindowWidth + 0.5f * offscreenImageWidthPx).roundToInt()
+        val imageX = ((x - osX) * visible2WindowWidth + 0.5f * offscreenImageWidthPx).roundToInt()
 
         val scaleFactor = 1f / visible2WindowWidth
         val scaledHeightInWindow = scaleFactor * image.height
         val offsetY = window.height - scaledHeightInWindow
-        val yWindow = y - 0.5f * offsetY
+        val yWindow = (y - osY) - 0.5f * offsetY
         val yImage = (visible2WindowWidth * yWindow).roundToInt()
 
         Point(imageX, yImage)

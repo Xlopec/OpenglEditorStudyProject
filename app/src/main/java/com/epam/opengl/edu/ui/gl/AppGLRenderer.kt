@@ -13,6 +13,8 @@ import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.geometry.height
 import com.epam.opengl.edu.model.geometry.size
 import com.epam.opengl.edu.model.geometry.width
+import com.epam.opengl.edu.model.geometry.x
+import com.epam.opengl.edu.model.geometry.y
 import com.epam.opengl.edu.model.transformation.ratio
 import com.epam.opengl.edu.ui.gl.Textures.Companion.PingTextureIdx
 import com.epam.opengl.edu.ui.gl.Textures.Companion.PongTextureIdx
@@ -159,16 +161,16 @@ class AppGLRenderer(
 
         val ratio = transformations.scene.window.ratio//transformations.scene.viewportRatio
         val zoom = 1f//transformations.scene.zoom
-        val consumedOffsetX = 0f//transformations.scene.textureOffsetXPoints
-        val consumedOffsetY = 0f//transformations.scene.textureOffsetYPoints
+        val consumedOffsetX = 2 * ratio * transformations.scene.sceneOffset.x.toFloat() / transformations.scene.window.width//transformations.scene.textureOffsetXPoints
+        val consumedOffsetY = 2 * transformations.scene.sceneOffset.y.toFloat() / transformations.scene.window.height//transformations.scene.textureOffsetYPoints
 
         Matrix.frustumM(
             /* m = */ projectionMatrix,
             /* offset = */ 0,
-            /* left = */ -ratio / zoom + consumedOffsetX,
-            /* right = */ ratio / zoom + consumedOffsetX,
-            /* bottom = */ -1f / zoom - consumedOffsetY,
-            /* top = */ 1f / zoom - consumedOffsetY,
+            /* left = */ -ratio / zoom - consumedOffsetX,
+            /* right = */ ratio / zoom - consumedOffsetX,
+            /* bottom = */ -1f / zoom + consumedOffsetY,
+            /* top = */ 1f / zoom + consumedOffsetY,
             /* near = */ 3f,
             /* far = */ 7f
         )
