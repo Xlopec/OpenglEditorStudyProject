@@ -22,8 +22,6 @@ import com.epam.opengl.edu.model.geometry.plus
 import com.epam.opengl.edu.model.geometry.width
 import com.epam.opengl.edu.model.geometry.x
 import com.epam.opengl.edu.model.geometry.y
-import kotlin.math.abs
-import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 /**
@@ -42,13 +40,6 @@ class Scene(
         const val MinSize = TolerancePx * 3
     }
 
-    /**
-     * Image offset in viewport coordinate system
-     */
-    @Deprecated("remove")
-    var imageOffset = Offset()
-        private set
-
     var sceneOffset = Offset()
         private set
 
@@ -58,7 +49,7 @@ class Scene(
     var userInput = Point(0, 0)
         private set
 
-    private var previousP = Point(0, 0)
+    private var previousRawPoint = Point(0, 0)
 
     /**
      * Cropping rect coordinates in viewport coordinate system. The latter means none of the vertices can be located outside viewport
@@ -70,25 +61,15 @@ class Scene(
         private set
 
     // fixme problems with zoom
-    private var currentSpan = 1f
     private var previousInput = Point(0, 0)
-    private var oldSpan = Float.NaN
-
-    val zoom: Float
-        get() = (currentSpan + image.width) / image.width.toFloat()
 
     fun onTouch(
         event: MotionEvent,
         isCropSelectionMode: Boolean,
     ) {
-        val point = Point(event.x.roundToInt(), event.y.roundToInt())
-
-        val rawOffsetDelta = Offset(point.x - previousP.x, point.y - previousP.y)
-        previousP = point
-
-        if (event.action == MotionEvent.ACTION_MOVE) {
-            sceneOffset += rawOffsetDelta
-        }
+        val rawPoint = Point(event.x.roundToInt(), event.y.roundToInt())
+        val rawOffsetDelta = Offset(rawPoint.x - previousRawPoint.x, rawPoint.y - previousRawPoint.y)
+        previousRawPoint = rawPoint
 
         userInput = event.toImagePoint(sceneOffset)
         println("Input $userInput")
@@ -96,54 +77,18 @@ class Scene(
         previousInput = userInput
 
         if (event.pointerCount > 1) {
-            handleZoom(event)
+            // not implemented yet
+            return
         } else {
             handleMovement(event.action, isCropSelectionMode, offset, rawOffsetDelta, userInput)
-        }
-    }
-
-    private fun handleZoom(
-        event: MotionEvent,
-    ) {
-        var focalX = 0f
-        var focalY = 0f
-
-        for (i in 0 until event.pointerCount) {
-            focalX += event.getX(i)
-            focalY += event.getY(i)
-        }
-
-        focalX /= event.pointerCount
-        focalY /= event.pointerCount
-
-        var devSumX = 0f
-        var devSumY = 0f
-
-        for (i in 0 until event.pointerCount) {
-            devSumX += abs(focalX - event.getX(i))
-            devSumY += abs(focalY - event.getY(i))
-        }
-
-        devSumX /= event.pointerCount
-        devSumY /= event.pointerCount
-
-        val span = hypot(devSumX, devSumY)
-
-        if (oldSpan.isNaN()) {
-            oldSpan = span
-        }
-
-        if (event.action == MotionEvent.ACTION_MOVE) {
-            currentSpan += span - oldSpan
-            oldSpan = span
         }
     }
 
     private fun handleMovement(
         action: Int,
         isCropSelectionMode: Boolean,
-        offset: Offset,
-        rawOffset: Offset,
+        imageOffset: Offset,
+        sceneOffset: Offset,
         userInput: Point,
     ) = with(image) {
         when (action) {
@@ -166,18 +111,13 @@ class Scene(
                     }
 
                     isCropSelectionMode && userInput in selection -> {
-                        selection = selection.offsetByWithinBounds(offset)
+                        selection = selection.offsetByWithinBounds(imageOffset)
                     }
 
                     else -> {
-                        imageOffset += offset
-                        //sceneOffset += rawOffset
+                        this@Scene.sceneOffset += sceneOffset
                     }
                 }
-            }
-
-            MotionEvent.ACTION_UP -> {
-                oldSpan = Float.NaN
             }
         }
     }

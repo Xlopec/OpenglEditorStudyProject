@@ -159,18 +159,17 @@ class AppGLRenderer(
             )
         }
 
-        val ratio = transformations.scene.window.ratio//transformations.scene.viewportRatio
-        val zoom = 1f//transformations.scene.zoom
-        val consumedOffsetX = 2 * ratio * transformations.scene.sceneOffset.x.toFloat() / transformations.scene.window.width//transformations.scene.textureOffsetXPoints
-        val consumedOffsetY = 2 * transformations.scene.sceneOffset.y.toFloat() / transformations.scene.window.height//transformations.scene.textureOffsetYPoints
+        val ratio = transformations.scene.window.ratio
+        val consumedOffsetX = 2 * ratio * transformations.scene.sceneOffset.x.toFloat() / transformations.scene.window.width
+        val consumedOffsetY = 2 * transformations.scene.sceneOffset.y.toFloat() / transformations.scene.window.height
 
         Matrix.frustumM(
             /* m = */ projectionMatrix,
             /* offset = */ 0,
-            /* left = */ -ratio / zoom - consumedOffsetX,
-            /* right = */ ratio / zoom - consumedOffsetX,
-            /* bottom = */ -1f / zoom + consumedOffsetY,
-            /* top = */ 1f / zoom + consumedOffsetY,
+            /* left = */ -ratio - consumedOffsetX,
+            /* right = */ ratio - consumedOffsetX,
+            /* bottom = */ -1f + consumedOffsetY,
+            /* top = */ 1f + consumedOffsetY,
             /* near = */ 3f,
             /* far = */ 7f
         )
