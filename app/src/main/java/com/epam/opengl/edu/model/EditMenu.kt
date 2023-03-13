@@ -58,7 +58,7 @@ fun EditMenu?.updateViewportAndImageOrCreate(
     newWindowSize: Size,
 ): EditMenu = this?.updateViewportAndImage(newImage, newImageSize, newWindowSize) ?: EditMenu(
     image = newImage,
-    current = Transformations(scene = Scene(image = newImageSize, window = newWindowSize))
+    current = Transformations(scene = Scene(imageSize = newImageSize, windowSize = newWindowSize))
 )
 
 fun EditMenu.updateViewportAndImage(
@@ -67,13 +67,13 @@ fun EditMenu.updateViewportAndImage(
     newWindowSize: Size,
 ): EditMenu {
     val updated = if (newImage != image) {
-        copy(image = newImage).updateTransformation(Scene(image = newImageSize, window = newWindowSize))
+        copy(image = newImage).updateTransformation(Scene(imageSize = newImageSize, windowSize = newWindowSize))
     } else {
         this
     }
 
-    return if (newImage == image && newWindowSize != displayTransformations.scene.window) {
-        updated.updateTransformation(Scene(image = newImageSize, window = newWindowSize))
+    return if (newImage == image && newWindowSize != displayTransformations.scene.windowSize) {
+        updated.updateTransformation(Scene(imageSize = newImageSize, windowSize = newWindowSize))
     } else {
         updated
     }

@@ -415,8 +415,8 @@ private fun EditMenuDisplayedPreview() {
             menu = EditMenu(
                 current = Transformations(
                     Scene(
-                        image = Size(10, 10),
-                        window = Size(
+                        imageSize = Size(10, 10),
+                        windowSize = Size(
                             width = 1080,
                             height = 1584
                         )
@@ -455,8 +455,8 @@ private fun EditMenuEditTransformationPreview() {
                 image = Uri.EMPTY,
                 current = Transformations(
                     Scene(
-                        image = Size(10, 10),
-                        window = Size(
+                        imageSize = Size(10, 10),
+                        windowSize = Size(
                             width = 1080,
                             height = 1584
                         )
@@ -466,8 +466,8 @@ private fun EditMenuEditTransformationPreview() {
                     which = Grayscale::class,
                     edited = Transformations(
                         scene = Scene(
-                            image = Size(10, 10),
-                            window = Size(
+                            imageSize = Size(10, 10),
+                            windowSize = Size(
                                 width = 1080,
                                 height = 1584
                             )

@@ -38,14 +38,14 @@ class AppGLRenderer(
 
             val imageChanged = value != null && old?.image != value.image
             val viewportChanged =
-                value != null && old == null && value.displayTransformations.scene.image != old?.displayTransformations?.scene?.image
+                value != null && old == null && value.displayTransformations.scene.imageSize != old?.displayTransformations?.scene?.imageSize
             val transformationsChanged = value?.displayTransformations != old?.displayTransformations
             val cropSelectionChanged = value?.displayCropSelection != old?.displayCropSelection
 
             if (viewportChanged) {
                 view.queueEvent {
                     // fixme image doesn't need to be passed in some cases
-                    bindBuffers(value!!.displayTransformations.scene.window, value.image)
+                    bindBuffers(value!!.displayTransformations.scene.windowSize, value.image)
                 }
             } else if (imageChanged) {
                 view.queueEvent {
@@ -149,14 +149,14 @@ class AppGLRenderer(
         }
 
         with(transformations.scene) {
-            val frustumOffsetX = 2 * window.ratio * sceneOffset.x / window.width
-            val frustumOffsetY = 2 * sceneOffset.y / window.height
+            val frustumOffsetX = 2 * windowSize.ratio * sceneOffset.x / windowSize.width
+            val frustumOffsetY = 2 * sceneOffset.y / windowSize.height
 
             Matrix.frustumM(
                 /* m = */ projectionMatrix,
                 /* offset = */ 0,
-                /* left = */ -window.ratio - frustumOffsetX,
-                /* right = */ window.ratio - frustumOffsetX,
+                /* left = */ -windowSize.ratio - frustumOffsetX,
+                /* right = */ windowSize.ratio - frustumOffsetX,
                 /* bottom = */ -1f + frustumOffsetY,
                 /* top = */ 1f + frustumOffsetY,
                 /* near = */ 3f,
@@ -166,7 +166,7 @@ class AppGLRenderer(
             Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1f, 0f)
             // Calculate the projection and view transformation
             Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-            viewTransformation.render(vPMatrix, 0, textures.readTextureFor(frameBuffers.size), image)
+            viewTransformation.render(vPMatrix, 0, textures.readTextureFor(frameBuffers.size), imageSize)
         }
 
         if (cropWasRequested) {
@@ -179,7 +179,7 @@ class AppGLRenderer(
         view.queueEvent {
             val scene = requireNotNull(state?.displayTransformations?.scene) { "can't export bitmap before state is initialized" }
             GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffers.cropFrameBuffer)
-            continuation.resume(readTextureToBitmap(scene.window))
+            continuation.resume(readTextureToBitmap(scene.windowSize))
         }
     }
 

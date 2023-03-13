@@ -53,7 +53,7 @@ class CropTransformation(
 
             val topLeft = leftTopImageOffset.toSceneOffset()
             val bottomRight = rightBottomImageOffset.toSceneOffset()
-            val croppedSize = window - topLeft - bottomRight
+            val croppedSize = windowSize - topLeft - bottomRight
             val buffer = readTextureToBuffer(topLeft, croppedSize)
 
             GLES31.glTexImage2D(
@@ -78,7 +78,7 @@ class CropTransformation(
     ) {
         render(fbo, transformations.scene) { cropRegionHandle, borderWidthHandle, pointerHandle ->
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / maxOf(window.width, window.height))
+            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / maxOf(windowSize.width, windowSize.height))
             val (x, y) = imagePoint.toGlPoint()
             GLES31.glUniform2f(pointerHandle, x, y)
 
@@ -99,7 +99,7 @@ class CropTransformation(
             val (x, y) = imagePoint.toGlPoint()
             GLES31.glUniform2f(pointerHandle, x, y)
             GLES31.glUniform4f(cropRegionHandle, 0f, 0f, 0f, 0f)
-            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / maxOf(window.width, window.height))
+            GLES31.glUniform1f(borderWidthHandle, RectLineWidthPx.toFloat() / maxOf(windowSize.width, windowSize.height))
         }
     }
 

@@ -33,11 +33,11 @@ class Scene(
     /**
      * Current image size
      */
-    val image: Size,
+    val imageSize: Size,
     /**
      * Current window size
      */
-    val window: Size,
+    val windowSize: Size,
 ) : Transformation {
 
     companion object {
@@ -64,7 +64,7 @@ class Scene(
      */
     var selection = Rect(
         topLeft = Point(0, 0),
-        bottomRight = Point(image.width, image.height)
+        bottomRight = Point(imageSize.width, imageSize.height)
     )
         private set
 
@@ -93,7 +93,7 @@ class Scene(
         imageOffsetDelta: Offset,
         sceneOffsetDelta: SceneOffset,
         userInput: Point,
-    ) = with(image) {
+    ) = with(imageSize) {
         when (action) {
             MotionEvent.ACTION_MOVE -> {
                 when {
@@ -127,35 +127,35 @@ class Scene(
 
 }
 
-fun Scene.onCropped(): Scene = Scene(image = selection.size, window = window)
+fun Scene.onCropped(): Scene = Scene(imageSize = selection.size, windowSize = windowSize)
 
 val Scene.leftTopImageOffset: Offset
     get() = Offset(selection.topLeft.x, selection.topLeft.y)
 
 val Scene.rightBottomImageOffset: Offset
-    get() = Offset(image.width - selection.bottomRight.x, image.height - selection.bottomRight.y)
+    get() = Offset(imageSize.width - selection.bottomRight.x, imageSize.height - selection.bottomRight.y)
 
 context (Scene)
 fun Offset.toSceneOffset(): SceneOffset {
-    val widthScaleFactor = window.width / image.width.toFloat()
-    val heightScaleFactor = window.height / image.height.toFloat()
+    val widthScaleFactor = windowSize.width / imageSize.width.toFloat()
+    val heightScaleFactor = windowSize.height / imageSize.height.toFloat()
     return SceneOffset(x * widthScaleFactor, y * heightScaleFactor)
 }
 
 context (Scene)
         @Suppress("NOTHING_TO_INLINE")
-        inline fun Point.toGlPoint(): GlPoint = GlPoint.fromPoint(this, image)
+        inline fun Point.toGlPoint(): GlPoint = GlPoint.fromPoint(this, imageSize)
 
 context (Scene)
         private fun ScenePoint.toImagePoint(): Point {
-    return if (image.isPortrait) {
-        val viewport2WindowHeight = image.height.toFloat() / window.height
+    return if (imageSize.isPortrait) {
+        val viewport2WindowHeight = imageSize.height.toFloat() / windowSize.height
         // how many times image was stretched to fit the window height
         val scaleFactor = 1f / viewport2WindowHeight
         // convert image width to width that it occupies inside window,
         // it might be bigger than window width itself
-        val scaledWidthInWindow = scaleFactor * image.width
-        val offsetX = window.width - scaledWidthInWindow
+        val scaledWidthInWindow = scaleFactor * imageSize.width
+        val offsetX = windowSize.width - scaledWidthInWindow
         val halfOffsetPx = offsetX * 0.5f
         val xWindow = x - halfOffsetPx
         val xImage = (viewport2WindowHeight * xWindow).roundToInt()
@@ -167,14 +167,14 @@ context (Scene)
         // (1f - window.ratio) won't be drawn and go to offset.
         // 1f == image.width
         // window.ratio == visible image on screen px
-        val onscreenImageWidthPx = window.ratio * image.width
-        val offscreenImageWidthPx = image.width - onscreenImageWidthPx
-        val visible2WindowWidth = onscreenImageWidthPx / window.width
+        val onscreenImageWidthPx = windowSize.ratio * imageSize.width
+        val offscreenImageWidthPx = imageSize.width - onscreenImageWidthPx
+        val visible2WindowWidth = onscreenImageWidthPx / windowSize.width
         val imageX = (x * visible2WindowWidth + 0.5f * offscreenImageWidthPx).roundToInt()
 
         val scaleFactor = 1f / visible2WindowWidth
-        val scaledHeightInWindow = scaleFactor * image.height
-        val offsetY = window.height - scaledHeightInWindow
+        val scaledHeightInWindow = scaleFactor * imageSize.height
+        val offsetY = windowSize.height - scaledHeightInWindow
         val yWindow = y - 0.5f * offsetY
         val yImage = (visible2WindowWidth * yWindow).roundToInt()
 
