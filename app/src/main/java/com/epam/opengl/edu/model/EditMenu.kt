@@ -102,7 +102,8 @@ fun EditMenu.applyEditedTransformation() = when (state) {
     is EditTransformation -> copy(
         state = Displayed,
         current = state.edited,
-        previous = previous + current
+        // todo add support for reverting Scene transformations
+        previous = if (state.which == Scene::class) { previous } else { previous + current }
     )
 }
 

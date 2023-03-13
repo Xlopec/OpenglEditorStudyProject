@@ -14,7 +14,7 @@ import java.nio.ByteOrder
 import kotlin.math.roundToInt
 
 fun readTextureToBuffer(
-    sceneOffset: SceneOffset,
+    offset: SceneOffset,
     size: Size,
 ): Buffer {
     val buffer = ByteBuffer.allocateDirect(size.width * size.height * 4)
@@ -22,8 +22,8 @@ fun readTextureToBuffer(
         .position(0)
 
     GLES31.glReadPixels(
-        /* x = */ sceneOffset.x.roundToInt(),
-        /* y = */ sceneOffset.y.roundToInt(),
+        /* x = */ offset.x.roundToInt(),
+        /* y = */ offset.y.roundToInt(),
         /* width = */ size.width,
         /* height = */ size.height,
         /* format = */ GLES31.GL_RGBA,
