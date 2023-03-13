@@ -2,7 +2,11 @@ package com.epam.opengl.edu
 
 import android.app.Activity
 import android.app.Application
-import com.epam.opengl.edu.model.*
+import com.epam.opengl.edu.model.AppState
+import com.epam.opengl.edu.model.Command
+import com.epam.opengl.edu.model.Environment
+import com.epam.opengl.edu.model.Message
+import com.epam.opengl.edu.model.update
 import io.github.xlopec.tea.core.Component
 import io.github.xlopec.tea.core.Initializer
 import kotlinx.coroutines.CoroutineScope

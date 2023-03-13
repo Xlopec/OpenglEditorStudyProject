@@ -1,11 +1,11 @@
 package com.epam.opengl.edu.ui
 
 import android.content.Context
-import android.graphics.Bitmap
+import android.graphics.Bitmap.CompressFormat
 import android.graphics.PixelFormat
 import android.net.Uri
 import android.opengl.GLSurfaceView
-import android.os.Environment
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.GetContent
 import androidx.compose.foundation.layout.Arrangement
@@ -35,8 +35,8 @@ import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,16 +63,13 @@ import com.epam.opengl.edu.model.canUndoTransformations
 import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.isDisplayed
 import com.epam.opengl.edu.model.transformation.Scene
+import com.epam.opengl.edu.saveBitmap
 import com.epam.opengl.edu.ui.gl.AppGLRenderer
 import com.epam.opengl.edu.ui.gl.decodeImageSize
 import com.epam.opengl.edu.ui.theme.AppTheme
 import io.github.xlopec.tea.core.Initial
 import io.github.xlopec.tea.core.Snapshot
-import java.io.File
-import java.io.FileOutputStream
 import kotlin.math.roundToInt
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 typealias MessageHandler = (Message) -> Unit
 
@@ -208,7 +205,7 @@ private fun EditorContent(
     modifier: Modifier,
     state: AppState,
     snapshot: Snapshot<Message, AppState, Command>,
-    export: MutableState<Int>,
+    export: State<Int>,
     onCropped: () -> Unit,
     onViewportUpdated: (Size) -> Unit,
 ) {
@@ -242,22 +239,15 @@ private fun EditorContent(
                         renderer.requestCrop()
                     }
                 }
-                if (export.value > 0) {
-                    LaunchedEffect(export.value) {
-                        val f = File(
-                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                            "output.png"
-                        )
 
-                        withContext(Dispatchers.IO) {
-                            FileOutputStream(f).use { fos ->
-                                val bitmap = renderer.bitmap()
-
-                                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
-                                bitmap.recycle()
-                            }
-
-                            println("done")
+                LaunchedEffect(export.value) {
+                    if (export.value > 0) {
+                        val bitmap = renderer.bitmap()
+                        try {
+                            context.saveBitmap(bitmap, "output.png", CompressFormat.PNG, 100, "image/png")
+                            Toast.makeText(context, "Image was exported", Toast.LENGTH_LONG).show()
+                        } finally {
+                            bitmap.recycle()
                         }
                     }
                 }

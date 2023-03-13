@@ -6,6 +6,10 @@
         android:glEsVersion="0x00030001"
         android:required="true" />
 
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+
     <application
         android:name=".OpenGLDemoApp"
         android:allowBackup="true"
