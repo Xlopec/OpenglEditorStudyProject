@@ -45,7 +45,7 @@ class AppGLRenderer(
             if (viewportChanged) {
                 view.queueEvent {
                     // fixme image doesn't need to be passed in some cases
-                    bindBuffers(value!!.displayTransformations.scene.windowSize, value.image)
+                    bindBuffers(value!!.image)
                 }
             } else if (imageChanged) {
                 view.queueEvent {
@@ -110,6 +110,9 @@ class AppGLRenderer(
     ) = with(gl) {
         val state = state ?: return@with
         val transformations = state.displayTransformations
+        val scene = transformations.scene
+
+        GLES31.glViewport(0, 0, scene.imageSize.width, scene.imageSize.height)
         // we're using previous texture as target for next transformations, render pipeline looks like the following
         // original texture -> grayscale transformation -> texture[1];
         // texture[1] -> hsv transformation -> texture[2];
@@ -148,7 +151,7 @@ class AppGLRenderer(
             )
         }
 
-        with(transformations.scene) {
+        with(scene) {
             val frustumOffsetX = 2 * windowSize.ratio * sceneOffset.x / windowSize.width
             val frustumOffsetY = 2 * sceneOffset.y / windowSize.height
 
@@ -166,7 +169,7 @@ class AppGLRenderer(
             Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1f, 0f)
             // Calculate the projection and view transformation
             Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-            viewTransformation.render(vPMatrix, 0, textures.readTextureFor(frameBuffers.size), imageSize)
+            viewTransformation.render(vPMatrix, 0, textures.readTextureFor(frameBuffers.size), imageSize, windowSize)
         }
 
         if (cropWasRequested) {
@@ -178,8 +181,9 @@ class AppGLRenderer(
     suspend fun bitmap(): Bitmap = suspendCoroutine { continuation ->
         view.queueEvent {
             val scene = requireNotNull(state?.displayTransformations?.scene) { "can't export bitmap before state is initialized" }
+            GLES31.glViewport(0, 0, scene.imageSize.width, scene.imageSize.height)
             GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffers.cropFrameBuffer)
-            continuation.resume(readTextureToBitmap(scene.windowSize))
+            continuation.resume(readTextureToBitmap(scene.imageSize))
         }
     }
 
@@ -201,17 +205,14 @@ class AppGLRenderer(
     }
 
     private fun bindBuffers(
-        viewport: Size,
         image: Uri,
     ) {
-        GLES31.glViewport(0, 0, viewport.width, viewport.height)
         GLES31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
-
         val bitmap = with(context) { image.asBitmap() }
+        val imageSize = Size(bitmap.width, bitmap.height)
 
         GLES31.glGenTextures(textures.size, textures.array, 0)
         GLES31.glGenFramebuffers(frameBuffers.size, frameBuffers.array, 0)
-
         // bind and load original texture
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.originalTexture)
         GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR)
@@ -231,8 +232,9 @@ class AppGLRenderer(
         // frameBuffers[3] -> textures[2]
         // ...
         for (frameBufferIndex in 0 until frameBuffers.size) {
-            setupFrameBuffer(viewport, textures.bindTextureFor(frameBufferIndex), frameBuffers[frameBufferIndex])
+            setupFrameBuffer(imageSize, textures.bindTextureFor(frameBufferIndex), frameBuffers[frameBufferIndex])
         }
+        GLES31.glViewport(0, 0, imageSize.width, imageSize.height)
     }
 
     private fun setupFrameBuffer(

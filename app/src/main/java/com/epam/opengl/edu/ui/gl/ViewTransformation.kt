@@ -6,6 +6,7 @@ import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.geometry.height
 import com.epam.opengl.edu.model.geometry.width
+import com.epam.opengl.edu.model.transformation.isPortrait
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
 
@@ -26,8 +27,10 @@ class ViewTransformation(
         targetFbo: Int,
         sourceTexture: Int,
         textureSize: Size,
+        windowSize: Size,
     ) {
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, targetFbo)
+        GLES31.glViewport(0, 0, windowSize.width, windowSize.height)
         GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
         GLES31.glUseProgram(program)
         val vPMatrixHandle = GLES31.glGetUniformLocation(program, "uMVPMatrix")
@@ -40,7 +43,7 @@ class ViewTransformation(
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, sourceTexture)
         GLES31.glUniform1i(textureHandle, 0)
 
-        if (textureSize.width < textureSize.height) {
+        if (textureSize.isPortrait) {
             GLES31.glUniform2f(textureRatioHandle, 1f / (textureSize.width.toFloat() / textureSize.height), 1f)
         } else {
             GLES31.glUniform2f(textureRatioHandle, 1f, 1f / (textureSize.height.toFloat() / textureSize.width))
