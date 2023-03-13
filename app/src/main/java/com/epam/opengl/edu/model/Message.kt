@@ -2,7 +2,6 @@ package com.epam.opengl.edu.model
 
 import android.net.Uri
 import com.epam.opengl.edu.model.geometry.Size
-import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.model.transformation.Transformation
 import kotlin.reflect.KClass
 
@@ -33,9 +32,3 @@ data class OnDataPrepared(
 ) : Message
 
 object OnCropped : Message
-
-@Deprecated("replace with more concrete classes")
-@JvmInline
-value class OnSceneUpdated(
-    val scene: Scene,
-) : Message

@@ -20,6 +20,5 @@ fun update(
 
         OnDiscardChanges -> state.withEditMenu { discardEditedTransformation() }.noCommand()
         OnUndoTransformation -> state.withEditMenu { undoLastTransformation() }.noCommand()
-        is OnSceneUpdated -> state.withEditMenu { updateTransformation(message.scene) }.noCommand()
         OnCropped -> state.withEditMenu { updateCropped() }.noCommand()
     }
