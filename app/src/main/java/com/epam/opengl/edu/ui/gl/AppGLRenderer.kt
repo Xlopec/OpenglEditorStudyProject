@@ -11,7 +11,6 @@ import android.view.View
 import com.epam.opengl.edu.model.*
 import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.geometry.height
-import com.epam.opengl.edu.model.geometry.size
 import com.epam.opengl.edu.model.geometry.width
 import com.epam.opengl.edu.model.geometry.x
 import com.epam.opengl.edu.model.geometry.y
@@ -178,14 +177,9 @@ class AppGLRenderer(
     // fixme rework, also, it'll stuck forever if glThread is stopped before event is enqueued
     suspend fun bitmap(): Bitmap = suspendCoroutine { continuation ->
         view.queueEvent {
-            val state = requireNotNull(state) { "can't export bitmap before state is initialized" }
-            GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffers[0])
-            continuation.resume(
-                saveTextureToBitmap(
-                    state.displayTransformations.scene.selection.size.width,
-                    state.displayTransformations.scene.selection.size.height
-                )
-            )
+            val scene = requireNotNull(state?.displayTransformations?.scene) { "can't export bitmap before state is initialized" }
+            GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffers.cropFrameBuffer)
+            continuation.resume(readTextureToBitmap(scene.window))
         }
     }
 
@@ -212,8 +206,6 @@ class AppGLRenderer(
     ) {
         GLES31.glViewport(0, 0, viewport.width, viewport.height)
         GLES31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
-        GLES31.glEnable(GLES31.GL_BLEND)
-        GLES31.glBlendFunc(GLES31.GL_SRC_ALPHA, GLES31.GL_ONE_MINUS_SRC_ALPHA)
 
         val bitmap = with(context) { image.asBitmap() }
 
@@ -302,15 +294,4 @@ private fun floatBufferOf(
     floatBuffer.put(data)
     floatBuffer.position(0)
     return floatBuffer
-}
-
-fun saveTextureToBitmap(w: Int, h: Int): Bitmap {
-    val buffer = ByteBuffer.allocateDirect(w * h * 4).order(ByteOrder.nativeOrder()).position(0)
-
-    GLES20.glReadPixels(0, 0, w, h, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer)
-
-    val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-    bitmap.copyPixelsFromBuffer(buffer)
-
-    return bitmap
 }

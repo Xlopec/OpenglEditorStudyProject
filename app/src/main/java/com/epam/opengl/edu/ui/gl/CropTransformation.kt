@@ -8,22 +8,17 @@ import com.epam.opengl.edu.model.geometry.component2
 import com.epam.opengl.edu.model.geometry.height
 import com.epam.opengl.edu.model.geometry.minus
 import com.epam.opengl.edu.model.geometry.width
-import com.epam.opengl.edu.model.geometry.x
-import com.epam.opengl.edu.model.geometry.y
 import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.model.transformation.Transformations
 import com.epam.opengl.edu.model.transformation.leftTopImageOffset
 import com.epam.opengl.edu.model.transformation.rightBottomImageOffset
 import com.epam.opengl.edu.model.transformation.toGlPoint
 import com.epam.opengl.edu.model.transformation.toSceneOffset
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
-import kotlin.math.roundToInt
 
 class CropTransformation(
     private val context: Context,
@@ -59,19 +54,7 @@ class CropTransformation(
             val topLeft = leftTopImageOffset.toSceneOffset()
             val bottomRight = rightBottomImageOffset.toSceneOffset()
             val croppedSize = window - topLeft - bottomRight
-            val buffer = ByteBuffer.allocateDirect(croppedSize.width * croppedSize.height * 4)
-                .order(ByteOrder.nativeOrder())
-                .position(0)
-
-            GLES31.glReadPixels(
-                /* x = */ topLeft.x.roundToInt(),
-                /* y = */ topLeft.y.roundToInt(),
-                /* width = */ croppedSize.width,
-                /* height = */ croppedSize.height,
-                /* format = */ GLES31.GL_RGBA,
-                /* type = */ GLES31.GL_UNSIGNED_BYTE,
-                /* pixels = */ buffer
-            )
+            val buffer = readTextureToBuffer(topLeft, croppedSize)
 
             GLES31.glTexImage2D(
                 GLES31.GL_TEXTURE_2D,
