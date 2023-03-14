@@ -13,7 +13,6 @@ import com.epam.opengl.edu.model.transformation.Transformations
 import com.epam.opengl.edu.model.transformation.leftTopImageOffset
 import com.epam.opengl.edu.model.transformation.rightBottomImageOffset
 import com.epam.opengl.edu.model.transformation.toGlPoint
-import com.epam.opengl.edu.model.transformation.toSceneOffset
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
 import kotlin.contracts.ExperimentalContracts
@@ -51,22 +50,25 @@ class CropTransformation(
         with(scene) {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.originalTexture)
 
-            val topLeft = leftTopImageOffset.toSceneOffset()
-            val bottomRight = rightBottomImageOffset.toSceneOffset()
-            val croppedSize = windowSize - topLeft - bottomRight
+            val topLeft = leftTopImageOffset
+            val bottomRight = rightBottomImageOffset
+            val croppedSize = imageSize - topLeft - bottomRight
             val buffer = readTextureToBuffer(topLeft, croppedSize)
 
-            GLES31.glTexImage2D(
-                GLES31.GL_TEXTURE_2D,
-                0,
-                GLES31.GL_RGBA,
-                croppedSize.width,
-                croppedSize.height,
-                0,
-                GLES31.GL_RGBA,
-                GLES31.GL_UNSIGNED_BYTE,
-                buffer
-            )
+            for (txt in textures.array) {
+                GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, txt)
+                GLES31.glTexImage2D(
+                    GLES31.GL_TEXTURE_2D,
+                    0,
+                    GLES31.GL_RGBA,
+                    croppedSize.width,
+                    croppedSize.height,
+                    0,
+                    GLES31.GL_RGBA,
+                    GLES31.GL_UNSIGNED_BYTE,
+                    buffer
+                )
+            }
         }
     }
 

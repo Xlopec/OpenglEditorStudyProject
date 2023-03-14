@@ -2,7 +2,7 @@ package com.epam.opengl.edu.ui.gl
 
 import android.graphics.Bitmap
 import android.opengl.GLES31
-import com.epam.opengl.edu.model.geometry.SceneOffset
+import com.epam.opengl.edu.model.geometry.Offset
 import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.geometry.height
 import com.epam.opengl.edu.model.geometry.width
@@ -11,10 +11,9 @@ import com.epam.opengl.edu.model.geometry.y
 import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import kotlin.math.roundToInt
 
 fun readTextureToBuffer(
-    offset: SceneOffset,
+    offset: Offset,
     size: Size,
 ): Buffer {
     val buffer = ByteBuffer.allocateDirect(size.width * size.height * 4)
@@ -22,8 +21,8 @@ fun readTextureToBuffer(
         .position(0)
 
     GLES31.glReadPixels(
-        /* x = */ offset.x.roundToInt(),
-        /* y = */ offset.y.roundToInt(),
+        /* x = */ offset.x,
+        /* y = */ offset.y,
         /* width = */ size.width,
         /* height = */ size.height,
         /* format = */ GLES31.GL_RGBA,
@@ -36,7 +35,7 @@ fun readTextureToBuffer(
 
 fun readTextureToBitmap(
     size: Size,
-    sceneOffset: SceneOffset = SceneOffset(0f, 0f),
+    sceneOffset: Offset = Offset(0, 0),
 ): Bitmap {
     val bitmap = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
     bitmap.copyPixelsFromBuffer(readTextureToBuffer(sceneOffset, size))
