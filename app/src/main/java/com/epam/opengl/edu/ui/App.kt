@@ -15,6 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.*
+import com.epam.opengl.edu.ui.gl.AppGLSurfaceView
 import com.epam.opengl.edu.ui.theme.AppTheme
 
 typealias MessageHandler = (Message) -> Unit

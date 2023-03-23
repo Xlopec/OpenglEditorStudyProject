@@ -2,5 +2,9 @@
     <string name="app_name">OpenGL Demo App</string>
     <string name="action_select_image">Select image</string>
     <string name="message_no_image">No image selected</string>
-    <string name="message_adjust_grayscale">Adjust</string>
+    <string name="message_adjust_grayscale">Grayscale</string>
+    <string name="message_adjust_brightness">Brightness</string>
+    <string name="message_adjust_saturation">Saturation</string>
+    <string name="message_adjust_contrast">Contrast</string>
+    <string name="message_adjust_tint">Tint</string>
 </resources>
