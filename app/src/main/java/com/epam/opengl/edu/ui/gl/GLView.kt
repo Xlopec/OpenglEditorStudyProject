@@ -24,7 +24,6 @@ import kotlinx.coroutines.awaitCancellation
 class GLViewState(
     editor: Editor,
     context: Context,
-    onCropped: () -> Unit,
     onViewportUpdated: (Size) -> Unit,
 ) {
     internal val view = GLSurfaceView(context).apply {
@@ -38,7 +37,6 @@ class GLViewState(
         context = context,
         view = view,
         editor = editor,
-        onCropped = onCropped,
         onViewportSizeChange = onViewportUpdated,
         onFpsUpdated = {
             fps = it
@@ -54,17 +52,16 @@ class GLViewState(
 
     suspend fun bitmap() = renderer.bitmap()
 
-    fun requestCrop() = renderer.requestCrop()
+    suspend fun crop() = renderer.crop()
 }
 
 @Composable
 fun rememberGlState(
     editor: Editor,
-    onCropped: () -> Unit,
     onViewportUpdated: (Size) -> Unit,
 ): GLViewState {
     val context = LocalContext.current
-    return remember { GLViewState(editor, context, onCropped, onViewportUpdated) }
+    return remember { GLViewState(editor, context, onViewportUpdated) }
 }
 
 @Composable

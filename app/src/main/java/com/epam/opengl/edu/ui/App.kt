@@ -175,7 +175,6 @@ fun App(
                 } else {
                     val glState = rememberGlState(
                         editor = editor,
-                        onCropped = { handler(OnCropped) },
                         onViewportUpdated = { viewport ->
                             viewportSize = viewport
                         }
@@ -185,7 +184,8 @@ fun App(
 
                     if (cropRequested) {
                         LaunchedEffect(Unit) {
-                            glState.requestCrop()
+                            glState.crop()
+                            handler(OnCropped)
                         }
                     }
 
