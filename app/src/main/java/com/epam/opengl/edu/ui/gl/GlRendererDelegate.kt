@@ -98,7 +98,6 @@ internal class GlRendererDelegate(
         return readTextureToBitmap(scene.imageSize)
     }
 
-    context (GL)
     fun onDrawFrame(
         backgroundColor: Color,
         editor: Editor,
