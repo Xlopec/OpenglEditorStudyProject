@@ -1,0 +1,19 @@
+*.iml
+*.jks
+.gradle
+/local.properties
+# User-specific stuff:
+.idea/*
+
+!.idea/codeStyles/
+
+# Gradle:
+/projectFilesBackup*/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+androidx_prebuilts/
+out/
+
+/buildSrc/local.properties

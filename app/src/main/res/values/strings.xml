@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">OpenGL Demo App</string>
+    <string name="action_select_image">Select image</string>
+    <string name="message_no_image">No image selected</string>
+</resources>
