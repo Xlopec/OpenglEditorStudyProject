@@ -1,6 +1,9 @@
 <resources>
-    <string name="app_name">OpenGL Demo App</string>
+    <string name="app_name">OpenGL Image Editor</string>
+
     <string name="action_select_image">Select image</string>
+    <string name="action_open_image">Open</string>
+
     <string name="badge_operations_overflow">10+</string>
     <string name="message_no_image">No image selected</string>
     <string name="message_adjust_grayscale">Grayscale</string>
@@ -12,6 +15,7 @@
     <string name="message_adjust_sigma">Sigma - %d</string>
     <string name="message_adjust_blur">Blur</string>
     <string name="message_adjust_crop">Crop</string>
+
     <string name="menu_item_grayscale">Grayscale</string>
     <string name="menu_item_contrast">Contrast</string>
     <string name="menu_item_saturation">Saturation</string>
@@ -19,4 +23,10 @@
     <string name="menu_item_tint">Tint</string>
     <string name="menu_item_blur">Blur</string>
     <string name="menu_item_crop">Crop</string>
+
+    <string name="notification_export_exception">Couldn\'t save image %s</string>
+    <string name="notification_export_success">Image was saved to %s</string>
+    
+    <string name="drawer_title_developer_mode">Debug Mode</string>
+    <string name="drawer_description_developer_mode">Enable developer mode</string>
 </resources>

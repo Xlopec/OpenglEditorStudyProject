@@ -19,7 +19,15 @@ fun AppResolver(): AppResolver<Environment> = object : AppResolver<Environment> 
         context: ResolveCtx<Message>,
     ) {
         snapshot.commands.forEach { command ->
-
+            when (command) {
+                is DoExportImage -> Unit
+                is NotifyException -> Unit
+                is NotifyImageExported -> Unit
+                is NotifyTransformationApplied -> Unit
+                is StoreDebugMode -> {
+                    value.isDebugModeEnabled = command.isDebugModeEnabled
+                }
+            }
         }
     }
 }

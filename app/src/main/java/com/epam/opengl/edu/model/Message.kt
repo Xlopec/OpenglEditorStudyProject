@@ -44,3 +44,8 @@ value class OnImageExported(
 value class OnImageExportException(
     val th: Throwable,
 ) : Message
+
+@JvmInline
+value class OnDebugModeChanged(
+    val isDebugModeEnabled: Boolean
+) : Message

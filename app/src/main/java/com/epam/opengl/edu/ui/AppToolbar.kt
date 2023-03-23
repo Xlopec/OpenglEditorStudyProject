@@ -1,43 +1,32 @@
 package com.epam.opengl.edu.ui
 
 import android.content.Context
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material.Badge
-import androidx.compose.material.BadgedBox
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
-import androidx.compose.material.contentColorFor
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoFixNormal
-import androidx.compose.material.icons.filled.AutoFixOff
-import androidx.compose.material.icons.filled.Undo
-import androidx.compose.material.icons.filled.UploadFile
-import androidx.compose.material.primarySurface
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.epam.opengl.edu.R
-import com.epam.opengl.edu.model.Editor
-import com.epam.opengl.edu.model.OnEditorMenuToggled
-import com.epam.opengl.edu.model.OnExportImage
-import com.epam.opengl.edu.model.OnUndoTransformation
-import com.epam.opengl.edu.model.canUndoTransformations
-import com.epam.opengl.edu.model.isDisplayed
+import com.epam.opengl.edu.model.*
+import kotlinx.coroutines.launch
 
 private const val MaxDisplayUndoOperations = 10
 
 @Composable
-fun InsetsAwareToolbar(
-    title: @Composable () -> Unit,
-    actions: @Composable RowScope.() -> Unit = {},
+fun AppToolbar(
+    editor: Editor?,
+    drawer: DrawerState,
+    handler: MessageHandler,
 ) {
+
+    val scope = rememberCoroutineScope()
+
     Surface(
         elevation = 1.dp,
         color = MaterialTheme.colors.primarySurface,
@@ -46,9 +35,34 @@ fun InsetsAwareToolbar(
             modifier = Modifier.statusBarsPadding(),
             backgroundColor = Color.Transparent,
             contentColor = contentColorFor(MaterialTheme.colors.primarySurface),
-            title = title,
+            navigationIcon = {
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            if (drawer.isOpen) {
+                                drawer.close()
+                            } else {
+                                drawer.open()
+                            }
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Menu,
+                        contentDescription = null
+                    )
+                }
+            },
+            title = { Text(text = stringResource(R.string.app_name)) },
             elevation = 0.dp,
-            actions = actions
+            actions = {
+                if (editor != null) {
+                    AppToolbarActions(
+                        editor = editor,
+                        handler = handler,
+                    )
+                }
+            }
         )
     }
 }
