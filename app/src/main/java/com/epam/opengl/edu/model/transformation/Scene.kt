@@ -38,6 +38,10 @@ class Scene(
      * Current window size
      */
     val windowSize: Size,
+    // todo refactor
+    val accumulatedLeftTopImageOffset: Offset = Offset(0, 0),
+    val accumulatedBottomRightImageOffset: Offset = Offset(0, 0),
+    val originalImageSize: Size = imageSize,
 ) : Transformation {
 
     companion object {
@@ -127,13 +131,28 @@ class Scene(
 
 }
 
-fun Scene.onCropped(): Scene = Scene(imageSize = selection.size, windowSize = windowSize)
+fun Scene.onCropped(): Scene = Scene(
+    imageSize = selection.size,
+    windowSize = windowSize,
+    accumulatedLeftTopImageOffset = accumulatedLeftTopImageOffset + leftTopImageOffset,
+    accumulatedBottomRightImageOffset = accumulatedBottomRightImageOffset + rightBottomImageOffset,
+    originalImageSize = originalImageSize
+)
 
 val Scene.leftTopImageOffset: Offset
     get() = Offset(selection.topLeft.x, selection.topLeft.y)
 
 val Scene.rightBottomImageOffset: Offset
     get() = Offset(imageSize.width - selection.bottomRight.x, imageSize.height - selection.bottomRight.y)
+
+val Scene.subImage: Rect
+    get() = Rect(
+        topLeft = Point(accumulatedLeftTopImageOffset.x, accumulatedLeftTopImageOffset.y),
+        bottomRight = Point(
+            originalImageSize.width - accumulatedBottomRightImageOffset.x,
+            originalImageSize.height - accumulatedBottomRightImageOffset.y
+        )
+    )
 
 context (Scene)
 fun Offset.toSceneOffset(): SceneOffset {

@@ -3,27 +3,48 @@ package com.epam.opengl.edu.ui.gl
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.BitmapRegionDecoder
 import android.net.Uri
 import android.opengl.GLES31
 import androidx.annotation.RawRes
+import com.epam.opengl.edu.model.geometry.Rect
 import com.epam.opengl.edu.model.geometry.Size
+import com.epam.opengl.edu.model.geometry.x
+import com.epam.opengl.edu.model.geometry.y
+import java.io.InputStream
 import java.io.Reader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 context (Context)
 fun Uri.asBitmap(
-    options: BitmapFactory.Options? = null
-): Bitmap =
-    (contentResolver.openInputStream(this) ?: error("can't open input stream for $this"))
-        .use { stream -> BitmapFactory.decodeStream(stream, null, options) ?: error("cannot decode input stream for $this") }
+    options: BitmapFactory.Options? = null,
+): Bitmap = inputStream { stream ->
+    BitmapFactory.decodeStream(stream, null, options) ?: error("cannot decode input stream for $this")
+}
 
 context (Context)
-suspend fun Uri.decodeImageSize(): Size = withContext(Dispatchers.IO) {
-    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    (contentResolver.openInputStream(this@decodeImageSize) ?: error("can't open input stream for $this"))
-        .use { stream -> BitmapFactory.decodeStream(stream, null, options) }
+fun Uri.asBitmap(
+    cropRect: Rect,
+    options: BitmapFactory.Options? = null,
+): Bitmap = inputStream { stream ->
+    (BitmapRegionDecoder.newInstance(stream, false) ?: error("can't create decoder for $this"))
+        .decodeRegion(
+            android.graphics.Rect(
+                cropRect.topLeft.x,
+                cropRect.topLeft.y,
+                cropRect.bottomRight.x,
+                cropRect.bottomRight.y,
+            ),
+            options
+        )
+}
 
+context (Context)
+        suspend fun Uri.decodeImageSize(): Size = withContext(Dispatchers.IO) {
+    val options = BitmapFactory.Options()
+        .apply { inJustDecodeBounds = true }
+        .also { options -> inputStream { stream -> BitmapFactory.decodeStream(stream, null, options) } }
     Size(options.outWidth, options.outHeight)
 }
 
@@ -64,3 +85,8 @@ fun Context.loadProgram(
 
     return program
 }
+
+context (Context)
+        private inline fun <T> Uri.inputStream(
+    crossinline mapper: (InputStream) -> T,
+): T = (contentResolver.openInputStream(this@inputStream) ?: error("can't open input stream for $this")).use(mapper)
