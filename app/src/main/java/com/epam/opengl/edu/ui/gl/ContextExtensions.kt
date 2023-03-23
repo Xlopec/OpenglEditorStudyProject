@@ -6,12 +6,26 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.opengl.GLES31
 import androidx.annotation.RawRes
+import com.epam.opengl.edu.model.geometry.Size
 import java.io.Reader
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 context (Context)
-fun Uri.asBitmap(): Bitmap =
+fun Uri.asBitmap(
+    options: BitmapFactory.Options? = null
+): Bitmap =
     (contentResolver.openInputStream(this) ?: error("can't open input stream for $this"))
-        .use { stream -> BitmapFactory.decodeStream(stream) ?: error("cannot decode input stream for $this") }
+        .use { stream -> BitmapFactory.decodeStream(stream, null, options) ?: error("cannot decode input stream for $this") }
+
+context (Context)
+suspend fun Uri.decodeImageSize(): Size = withContext(Dispatchers.IO) {
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    (contentResolver.openInputStream(this@decodeImageSize) ?: error("can't open input stream for $this"))
+        .use { stream -> BitmapFactory.decodeStream(stream, null, options) }
+
+    Size(options.outWidth, options.outHeight)
+}
 
 fun Context.loadShader(type: Int, @RawRes res: Int): Int {
     val sources = resources.openRawResource(res).reader().use(Reader::readText)

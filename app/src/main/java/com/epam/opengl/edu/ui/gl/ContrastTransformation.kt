@@ -3,7 +3,7 @@ package com.epam.opengl.edu.ui.gl
 import android.content.Context
 import android.opengl.GLES31
 import com.epam.opengl.edu.R
-import com.epam.opengl.edu.model.Transformations
+import com.epam.opengl.edu.model.transformation.Transformations
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
 

@@ -1,6 +1,8 @@
 package com.epam.opengl.edu.model
 
 import android.net.Uri
+import com.epam.opengl.edu.model.geometry.Size
+import com.epam.opengl.edu.model.transformation.Transformation
 import kotlin.reflect.KClass
 
 sealed interface Message
@@ -23,7 +25,10 @@ object OnApplyChanges : Message
 
 object OnDiscardChanges : Message
 
-@JvmInline
-value class OnImageSelected(
+data class OnDataPrepared(
     val image: Uri,
+    val imageSize: Size,
+    val windowSize: Size,
 ) : Message
+
+object OnCropped : Message
