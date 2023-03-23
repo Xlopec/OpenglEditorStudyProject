@@ -29,4 +29,6 @@
     
     <string name="drawer_title_developer_mode">Debug Mode</string>
     <string name="drawer_description_developer_mode">Enable developer mode</string>
+
+    <string name="debug_message_fps_counter">FPS: %d</string>
 </resources>
