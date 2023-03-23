@@ -1,6 +1,5 @@
 package com.epam.opengl.edu.ui
 
-import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.horizontalScroll
@@ -17,11 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.*
-import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.transformation.Brightness
 import com.epam.opengl.edu.model.transformation.Contrast
 import com.epam.opengl.edu.model.transformation.GaussianBlur
@@ -29,8 +26,6 @@ import com.epam.opengl.edu.model.transformation.Grayscale
 import com.epam.opengl.edu.model.transformation.Saturation
 import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.model.transformation.Tint
-import com.epam.opengl.edu.model.transformation.Transformations
-import com.epam.opengl.edu.ui.theme.AppTheme
 
 private val MenuItemHorizontalSpacing = 10.dp
 
@@ -318,7 +313,7 @@ private fun EditContrast(
 }
 
 @Composable
-private fun EditBlur(
+internal fun EditBlur(
     modifier: Modifier,
     blur: GaussianBlur,
     handler: MessageHandler,
@@ -399,79 +394,5 @@ private fun IconButton(
                 style = MaterialTheme.typography.caption
             )
         }
-    }
-}
-
-@Preview
-@Composable
-private fun EditMenuDisplayedPreview() {
-    AppTheme {
-        AppBottomBar(
-            editor = Editor(
-                current = Transformations(
-                    Scene(
-                        imageSize = Size(10, 10),
-                        windowSize = Size(
-                            width = 1080,
-                            height = 1584
-                        )
-                    )
-                ),
-                image = Uri.EMPTY,
-                state = Displayed
-            ),
-            handler = {}
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun EditBlurTransformationPreview() {
-    AppTheme {
-        Surface {
-            EditBlur(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 4.dp),
-                blur = GaussianBlur(3, 7),
-                handler = {}
-            )
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun EditMenuEditTransformationPreview() {
-    AppTheme {
-        AppBottomBar(
-            editor = Editor(
-                image = Uri.EMPTY,
-                current = Transformations(
-                    Scene(
-                        imageSize = Size(10, 10),
-                        windowSize = Size(
-                            width = 1080,
-                            height = 1584
-                        )
-                    )
-                ),
-                state = EditTransformation(
-                    which = Grayscale::class,
-                    edited = Transformations(
-                        scene = Scene(
-                            imageSize = Size(10, 10),
-                            windowSize = Size(
-                                width = 1080,
-                                height = 1584
-                            )
-                        ),
-                        grayscale = Grayscale(0.37f)
-                    )
-                )
-            ),
-            handler = {}
-        )
     }
 }
