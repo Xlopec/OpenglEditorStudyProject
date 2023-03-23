@@ -1,6 +1,8 @@
 package com.epam.opengl.edu.model
 
 import android.net.Uri
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.model.transformation.Transformation
@@ -11,6 +13,7 @@ import kotlin.reflect.KClass
 
 const val DefaultExportFileName = "output.png"
 
+@Stable
 data class Editor(
     val image: Uri,
     val current: Transformations,
@@ -19,6 +22,7 @@ data class Editor(
     val isExportingImage: Boolean = false,
 )
 
+@Immutable
 sealed interface EditorState
 
 object Hidden : EditorState

@@ -1,9 +1,11 @@
 package com.epam.opengl.edu.model
 
 import android.net.Uri
+import androidx.compose.runtime.Immutable
 import com.epam.opengl.edu.model.transformation.Transformation
 import kotlin.reflect.KClass
 
+@Immutable
 sealed interface Command
 
 @JvmInline
