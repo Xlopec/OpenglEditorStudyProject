@@ -1,8 +1,6 @@
 package com.epam.opengl.edu.ui.gl
 
 import android.content.Context
-import android.graphics.PixelFormat
-import android.opengl.GLSurfaceView
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,33 +24,23 @@ class GLViewState(
     context: Context,
     onViewportUpdated: (Size) -> Unit,
 ) {
-    internal val view = GLSurfaceView(context).apply {
-        setEGLContextClientVersion(3)
-        setEGLConfigChooser(8, 8, 8, 8, 16, 0)
-        preserveEGLContextOnPause = true
-        holder.setFormat(PixelFormat.TRANSLUCENT)
-    }
-
-    internal val renderer = AppGLRenderer(
+    internal val view = AppGLSurfaceView(
         context = context,
-        view = view,
         editor = editor,
-        onViewportSizeChange = onViewportUpdated,
-        onFpsUpdated = {
-            fps = it
-        }
+        onViewportUpdated = onViewportUpdated,
+        onFpsUpdated = { fps = it }
     )
 
     var fps by mutableStateOf(0U)
         private set
 
-    var editor by renderer::editor
+    var editor by view::editor
 
-    var isDebugModeEnabled by renderer::isDebugModeEnabled
+    var isDebugModeEnabled by view::isDebugModeEnabled
 
-    suspend fun bitmap() = renderer.bitmap()
+    suspend fun bitmap() = view.bitmap()
 
-    suspend fun crop() = renderer.crop()
+    suspend fun crop() = view.crop()
 }
 
 @Composable
@@ -85,9 +73,8 @@ fun GLView(
 
     AndroidView(
         modifier = modifier,
-        // fixme once we set renderer gl thread starts
-        factory = { state.view.apply { setRenderer(state.renderer) } }
-    ) {
-        state.renderer.backgroundColor = backgroundColor
+        factory = { state.view }
+    ) { view ->
+        view.backgroundColor = backgroundColor
     }
 }

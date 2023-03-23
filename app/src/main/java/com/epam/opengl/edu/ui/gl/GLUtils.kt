@@ -16,7 +16,7 @@ fun readTextureToBuffer(
     offset: Offset,
     size: Size,
 ): Buffer {
-    val buffer = ByteBuffer.allocateDirect(size.width * size.height * 4)
+    val buffer = ByteBuffer.allocateDirect(size.width * size.height * Float.SIZE_BYTES)
         .order(ByteOrder.nativeOrder())
         .position(0)
 
