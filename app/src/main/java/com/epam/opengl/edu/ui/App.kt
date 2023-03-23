@@ -4,13 +4,37 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.GetContent
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.DrawerValue
+import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.Icon
+import androidx.compose.material.Scaffold
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cached
 import androidx.compose.material.icons.filled.PermMedia
-import androidx.compose.runtime.*
+import androidx.compose.material.rememberDrawerState
+import androidx.compose.material.rememberScaffoldState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -21,7 +45,15 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import com.epam.opengl.edu.MimeTypePng
 import com.epam.opengl.edu.R
-import com.epam.opengl.edu.model.*
+import com.epam.opengl.edu.model.AppState
+import com.epam.opengl.edu.model.Command
+import com.epam.opengl.edu.model.DoExportImage
+import com.epam.opengl.edu.model.Message
+import com.epam.opengl.edu.model.NotifyTransformationApplied
+import com.epam.opengl.edu.model.OnCropped
+import com.epam.opengl.edu.model.OnDataPrepared
+import com.epam.opengl.edu.model.OnImageExportException
+import com.epam.opengl.edu.model.OnImageExported
 import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.saveBitmap
@@ -42,7 +74,6 @@ fun App(
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var viewportSize by remember { mutableStateOf<Size?>(null) }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
     val scaffoldState = rememberScaffoldState(drawerState = drawerState)
     val app = snapshot.currentState
     val editor = app.editor
@@ -152,6 +183,9 @@ fun App(
 
                     LaunchedEffect(editor) {
                         glState.editor = editor
+                    }
+                    LaunchedEffect(app.isDebugModeEnabled) {
+                        glState.isDebugModeEnabled = app.isDebugModeEnabled
                     }
 
                     AppNotificationsHandler(snapshot, scaffoldState)

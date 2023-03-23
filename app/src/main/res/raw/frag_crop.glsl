@@ -5,9 +5,10 @@ uniform sampler2D uTexture;
 // top left; bottom right (x, y)
 uniform vec4 cropRegion;
 uniform float borderWidth;
+uniform vec2 pointer;
+uniform bool debugEnabled;
 in vec2 vTexPosition;
 out vec4 outColor;
-uniform vec2 pointer;
 
 const vec4 cropRegionLineColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 const vec4 cropRegionContentTint = vec4(1.0f, 1.0f, 1.0f, 0.6f);
@@ -46,10 +47,6 @@ bool isRectContent() {
     return inside(vTexPosition.x, cropRegion.x, cropRegion.z) && inside(vTexPosition.y, cropRegion.y, cropRegion.w);
 }
 
-bool drawInputPointer() {
-    return borderWidth > 0.0f;
-}
-
 bool isInputPointer() {
     return abs(vTexPosition.x - pointer.x) <= borderWidth || abs(vTexPosition.y - pointer.y) <= borderWidth;
 }
@@ -68,7 +65,7 @@ vec4 tint(vec4 foreground, vec4 background)
 
 void main()
 {
-    if (drawInputPointer() && isInputPointer()) {
+    if (debugEnabled && isInputPointer()) {
         outColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);
     } else if (drawSelectionRect() && isRectLine()) {
         outColor = cropRegionLineColor;
