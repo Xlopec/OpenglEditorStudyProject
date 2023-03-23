@@ -20,14 +20,14 @@
         android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.OpenGLDemo"
+        android:theme="@style/OpenGLDemo"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="true"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.OpenGLDemo">
+            android:theme="@style/OpenGLDemo">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
