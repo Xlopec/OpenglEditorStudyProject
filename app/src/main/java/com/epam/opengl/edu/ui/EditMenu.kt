@@ -2,8 +2,12 @@ package com.epam.opengl.edu.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -91,40 +95,65 @@ private fun EditTransformationMenu(
             tint = state.edited.tint,
             handler = handler
         )
+
+        GaussianBlur::class -> EditBlur(
+            modifier = editMenuModifier,
+            blur = state.edited.blur,
+            handler = handler
+        )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun EditMenuDisplayed(
     handler: MessageHandler,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .scrollable(
+                state = rememberScrollState(),
+                orientation = Orientation.Horizontal,
+                overscrollEffect = null
+            ),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         IconButton(
             image = Icons.Filled.FilterBAndW,
+            text = stringResource(R.string.menu_item_grayscale),
             onClick = { handler(OnSwitchedToEditTransformation(Grayscale::class)) }
         )
 
         IconButton(
             image = Icons.Filled.Contrast,
+            text = stringResource(R.string.menu_item_contrast),
             onClick = { handler(OnSwitchedToEditTransformation(Contrast::class)) }
         )
 
         IconButton(
             image = Icons.Filled.Tonality,
+            text = stringResource(R.string.menu_item_saturation),
             onClick = { handler(OnSwitchedToEditTransformation(Saturation::class)) }
         )
 
         IconButton(
             image = Icons.Filled.SettingsBrightness,
+            text = stringResource(R.string.menu_item_brightness),
             onClick = { handler(OnSwitchedToEditTransformation(Brightness::class)) }
         )
 
         IconButton(
             image = Icons.Filled.Palette,
+            text = stringResource(R.string.menu_item_tint),
             onClick = { handler(OnSwitchedToEditTransformation(Tint::class)) }
+        )
+
+        IconButton(
+            image = Icons.Filled.BlurOn,
+            text = stringResource(R.string.menu_item_blur),
+            onClick = { handler(OnSwitchedToEditTransformation(GaussianBlur::class)) }
         )
     }
 }
@@ -139,8 +168,8 @@ private fun EditTint(
         modifier = modifier,
         title = stringResource(R.string.message_adjust_tint),
         value = tint.value,
-        valueRange = -1f..1f,
-        onValueChange = { handler(OnTintUpdated(it)) },
+        valueRange = Tint.Min.value..Tint.Max.value,
+        onValueChange = { handler(OnTransformationUpdated(Tint(it))) },
         onApplyChanges = { handler(OnApplyChanges) },
         onDiscardChanges = { handler(OnDiscardChanges) },
     )
@@ -213,7 +242,7 @@ private fun EditGrayscale(
         title = stringResource(R.string.message_adjust_grayscale),
         value = grayscale.value,
         valueRange = Grayscale.Min.value..Grayscale.Max.value,
-        onValueChange = { handler(OnGrayscaleUpdated(it)) },
+        onValueChange = { handler(OnTransformationUpdated(Grayscale(it))) },
         onApplyChanges = { handler(OnApplyChanges) },
         onDiscardChanges = { handler(OnDiscardChanges) },
     )
@@ -230,7 +259,7 @@ private fun EditBrightness(
         title = stringResource(R.string.message_adjust_brightness),
         value = brightness.delta,
         valueRange = Brightness.Min.delta..Brightness.Max.delta,
-        onValueChange = { handler(OnBrightnessUpdated(it)) },
+        onValueChange = { handler(OnTransformationUpdated(Brightness(it))) },
         onApplyChanges = { handler(OnApplyChanges) },
         onDiscardChanges = { handler(OnDiscardChanges) },
     )
@@ -247,7 +276,7 @@ private fun EditSaturation(
         title = stringResource(R.string.message_adjust_saturation),
         value = saturation.delta,
         valueRange = Saturation.Min.delta..Saturation.Max.delta,
-        onValueChange = { handler(OnSaturationUpdated(it)) },
+        onValueChange = { handler(OnTransformationUpdated(Saturation(it))) },
         onApplyChanges = { handler(OnApplyChanges) },
         onDiscardChanges = { handler(OnDiscardChanges) },
     )
@@ -264,30 +293,78 @@ private fun EditContrast(
         title = stringResource(R.string.message_adjust_contrast),
         value = contrast.delta,
         valueRange = Contrast.Min.delta..Contrast.Max.delta,
-        onValueChange = { handler(OnContrastUpdated(it)) },
+        onValueChange = { handler(OnTransformationUpdated(Contrast(it))) },
         onApplyChanges = { handler(OnApplyChanges) },
         onDiscardChanges = { handler(OnDiscardChanges) },
     )
 }
 
 @Composable
+private fun EditBlur(
+    modifier: Modifier,
+    blur: GaussianBlur,
+    handler: MessageHandler,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = stringResource(R.string.message_adjust_radius, blur.radius),
+        )
+        Slider(
+            modifier = Modifier.fillMaxWidth(),
+            value = blur.radius.toFloat(),
+            valueRange = GaussianBlur.Min.radius.toFloat()..GaussianBlur.Max.radius.toFloat(),
+            onValueChange = { handler(OnTransformationUpdated(blur.copy(radius = it.toInt()))) }
+        )
+        Text(
+            text = stringResource(R.string.message_adjust_sigma, blur.sigma)
+        )
+        Slider(
+            modifier = Modifier.fillMaxWidth(),
+            value = blur.sigma.toFloat(),
+            valueRange = GaussianBlur.Min.sigma.toFloat()..GaussianBlur.Max.sigma.toFloat(),
+            onValueChange = { handler(OnTransformationUpdated(blur.copy(sigma = it.toInt()))) }
+        )
+        EditActions(
+            title = stringResource(R.string.message_adjust_blur),
+            onDiscardChanges = { handler(OnDiscardChanges) },
+            onApplyChanges = { handler(OnApplyChanges) }
+        )
+    }
+}
+
+@Composable
 private fun IconButton(
     image: ImageVector,
     enabled: Boolean = true,
+    text: String? = null,
     onClick: () -> Unit,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     tint: Color = LocalContentColor.current.copy(alpha = LocalContentAlpha.current),
 ) {
-    IconButton(
-        onClick = onClick,
-        interactionSource = interactionSource,
-        enabled = enabled
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = image,
-            tint = tint,
-            contentDescription = null
-        )
+        IconButton(
+            onClick = onClick,
+            interactionSource = interactionSource,
+            enabled = enabled
+        ) {
+            Icon(
+                imageVector = image,
+                tint = tint,
+                contentDescription = null
+            )
+        }
+
+        if (text != null) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.caption
+            )
+        }
     }
 }
 
@@ -304,14 +381,14 @@ private fun EditMenuDisplayedPreview() {
 
 @Preview
 @Composable
-private fun EditTintTransformationPreview() {
+private fun EditBlurTransformationPreview() {
     AppTheme {
         Surface {
-            EditTint(
+            EditBlur(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 4.dp),
-                tint = Tint(0f),
+                blur = GaussianBlur(3, 7),
                 handler = {}
             )
         }

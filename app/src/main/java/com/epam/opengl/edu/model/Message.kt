@@ -8,28 +8,8 @@ sealed interface Message
 object OnEditorMenuToggled : Message
 
 @JvmInline
-value class OnGrayscaleUpdated(
-    val value: Float,
-) : Message
-
-@JvmInline
-value class OnBrightnessUpdated(
-    val value: Float,
-) : Message
-
-@JvmInline
-value class OnSaturationUpdated(
-    val value: Float,
-) : Message
-
-@JvmInline
-value class OnContrastUpdated(
-    val value: Float,
-) : Message
-
-@JvmInline
-value class OnTintUpdated(
-    val value: Float,
+value class OnTransformationUpdated(
+    val transformation: Transformation,
 ) : Message
 
 @JvmInline
