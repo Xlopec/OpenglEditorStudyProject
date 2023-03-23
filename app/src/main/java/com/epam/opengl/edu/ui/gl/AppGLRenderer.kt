@@ -26,6 +26,7 @@ class AppGLRenderer(
     editor: Editor,
     private val onCropped: () -> Unit,
     private val onViewportSizeChange: (Size) -> Unit,
+    isDebugModeEnabled: Boolean = false,
 ) : GLSurfaceView.Renderer, View.OnTouchListener {
 
     private companion object {
@@ -54,7 +55,18 @@ class AppGLRenderer(
             }
         }
 
+    @Volatile
     var backgroundColor: Color = Color.White
+
+    @Volatile
+    var isDebugModeEnabled: Boolean = isDebugModeEnabled
+        set(value) {
+            val old = field
+            field = value
+            if (old != value) {
+                view.requestRender()
+            }
+        }
 
     private val verticesBuffer = floatBufferOf(
         -1f, -1f,
@@ -169,19 +181,22 @@ class AppGLRenderer(
                 transformations = transformations,
                 fbo = frameBuffers.cropFrameBuffer,
                 texture = readFromTexture,
-                textures = textures
+                textures = textures,
+                isDebugEnabled = isDebugModeEnabled,
             )
         } else if (state.displayCropSelection) {
             cropTransformation.drawSelection(
                 transformations = transformations,
                 fbo = frameBuffers.cropFrameBuffer,
                 texture = readFromTexture,
+                isDebugEnabled = isDebugModeEnabled,
             )
         } else {
             cropTransformation.drawNormal(
                 fbo = frameBuffers.cropFrameBuffer,
                 texture = readFromTexture,
-                transformations = transformations
+                transformations = transformations,
+                isDebugEnabled = isDebugModeEnabled,
             )
         }
 

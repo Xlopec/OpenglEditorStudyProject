@@ -35,6 +35,8 @@ class GLViewState(
 
     var editor by renderer::editor
 
+    var isDebugModeEnabled by renderer::isDebugModeEnabled
+
     suspend fun bitmap() = renderer.bitmap()
 
     fun requestCrop() = renderer.requestCrop()
