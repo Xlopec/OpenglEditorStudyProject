@@ -6,13 +6,15 @@ uniform float contrast;
 in vec2 vTexPosition;
 out vec4 outColor;
 
+#define M_SHIFT 259.0 / 255.0
+
 // see https://ie.nitk.ac.in/blog/2020/01/19/algorithms-for-adjusting-brightness-and-contrast-of-an-image/
 void main()
 {
     vec4 textureColor = texture(uTexture, vTexPosition);
-    float f = (259.0f * (contrast + 255.0f)) / (255.0f * (259.0f - contrast));
-    float r = clamp(f * (textureColor.r - 128.0f) + 128.0f, 0.0f, 255.0f);
-    float g = clamp(f * (textureColor.g - 128.0f) + 128.0f, 0.0f, 255.0f);
-    float b = clamp(f * (textureColor.b - 128.0f) + 128.0f, 0.0f, 255.0f);
+    float f = (M_SHIFT * (contrast + 1.0f)) / (1.0f * (M_SHIFT - contrast));
+    float r = clamp(f * (textureColor.r - 0.5f) + 0.5f, 0.0f, 1.0f);
+    float g = clamp(f * (textureColor.g - 0.5f) + 0.5f, 0.0f, 1.0f);
+    float b = clamp(f * (textureColor.b - 0.5f) + 0.5f, 0.0f, 1.0f);
     outColor = vec4(r, g, b, textureColor.a);
 }
