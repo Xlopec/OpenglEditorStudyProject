@@ -13,6 +13,26 @@ value class OnGrayscaleUpdated(
 ) : Message
 
 @JvmInline
+value class OnBrightnessUpdated(
+    val value: Float,
+) : Message
+
+@JvmInline
+value class OnSaturationUpdated(
+    val value: Float,
+) : Message
+
+@JvmInline
+value class OnContrastUpdated(
+    val value: Float,
+) : Message
+
+@JvmInline
+value class OnTintUpdated(
+    val value: Float,
+) : Message
+
+@JvmInline
 value class OnSwitchedToEditTransformation(
     val which: KClass<out Transformation>,
 ) : Message
