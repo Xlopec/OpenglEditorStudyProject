@@ -9,11 +9,14 @@ import com.epam.opengl.edu.model.transformation.onCropped
 import com.epam.opengl.edu.model.transformation.plus
 import kotlin.reflect.KClass
 
-data class EditMenu(
+const val DefaultExportFileName = "output.png"
+
+data class Editor(
     val image: Uri,
     val current: Transformations,
     val state: EditorState = Hidden,
     val previous: List<Transformations> = listOf(),
+    val isExportingImage: Boolean = false,
 )
 
 sealed interface EditorState
@@ -27,22 +30,26 @@ data class EditTransformation(
     val edited: Transformations,
 ) : EditorState
 
-val EditMenu.isDisplayed: Boolean
+val Editor.isDisplayed: Boolean
     get() = state !== Hidden
 
-val EditMenu.canUndoTransformations: Boolean
+val Editor.canUndoTransformations: Boolean
     get() = previous.isNotEmpty()
 
-val EditMenu.displayTransformations: Transformations
+val Editor.displayTransformations: Transformations
     get() = when (state) {
         Displayed, Hidden -> current
         is EditTransformation -> state.edited
     }
 
-val EditMenu.displayCropSelection: Boolean
+val Editor.displayCropSelection: Boolean
     get() = state is EditTransformation && state.which == Scene::class
 
-fun EditMenu.undoLastTransformation() =
+fun Editor.onImageExportStart() = copy(isExportingImage = true)
+
+fun Editor.onImageExportedFinished() = copy(isExportingImage = false)
+
+fun Editor.undoLastTransformation() =
     if (canUndoTransformations) {
         copy(
             current = previous.last(),
@@ -52,20 +59,20 @@ fun EditMenu.undoLastTransformation() =
         this
     }
 
-fun EditMenu?.updateViewportAndImageOrCreate(
+fun Editor?.updateViewportAndImageOrCreate(
     newImage: Uri,
     newImageSize: Size,
     newWindowSize: Size,
-): EditMenu = this?.updateViewportAndImage(newImage, newImageSize, newWindowSize) ?: EditMenu(
+): Editor = this?.updateViewportAndImage(newImage, newImageSize, newWindowSize) ?: Editor(
     image = newImage,
     current = Transformations(scene = Scene(imageSize = newImageSize, windowSize = newWindowSize))
 )
 
-fun EditMenu.updateViewportAndImage(
+fun Editor.updateViewportAndImage(
     newImage: Uri,
     newImageSize: Size,
     newWindowSize: Size,
-): EditMenu {
+): Editor {
     val updated = if (newImage != image) {
         copy(image = newImage).updateTransformation(Scene(imageSize = newImageSize, windowSize = newWindowSize))
     } else {
@@ -79,9 +86,9 @@ fun EditMenu.updateViewportAndImage(
     }
 }
 
-fun EditMenu.updateCropped() = updateTransformation(displayTransformations.scene.onCropped())
+fun Editor.updateCropped() = updateTransformation(displayTransformations.scene.onCropped())
 
-fun EditMenu.updateTransformation(
+fun Editor.updateTransformation(
     transformation: Transformation,
 ) = when (state) {
     Displayed, Hidden -> copy(current = current + transformation)
@@ -93,11 +100,11 @@ fun EditMenu.updateTransformation(
     )
 }
 
-fun EditMenu.switchToEditTransformationMode(
+fun Editor.switchToEditTransformationMode(
     which: KClass<out Transformation>,
-): EditMenu = copy(state = EditTransformation(which = which, edited = current))
+): Editor = copy(state = EditTransformation(which = which, edited = current))
 
-fun EditMenu.applyEditedTransformation() = when (state) {
+fun Editor.applyEditedTransformation() = when (state) {
     Displayed, Hidden -> this
     is EditTransformation -> copy(
         state = Displayed,
@@ -107,12 +114,12 @@ fun EditMenu.applyEditedTransformation() = when (state) {
     )
 }
 
-fun EditMenu.discardEditedTransformation() = when (state) {
+fun Editor.discardEditedTransformation() = when (state) {
     Displayed, Hidden -> this
     is EditTransformation -> copy(state = Displayed)
 }
 
-fun EditMenu.toggleState() = copy(
+fun Editor.toggleState() = copy(
     state = when (state) {
         Hidden -> Displayed
         is EditTransformation, Displayed -> Hidden

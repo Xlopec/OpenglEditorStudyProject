@@ -32,3 +32,15 @@ data class OnDataPrepared(
 ) : Message
 
 object OnCropped : Message
+
+object OnExportImage : Message
+
+@JvmInline
+value class OnImageExported(
+    val path: Uri,
+) : Message
+
+@JvmInline
+value class OnImageExportException(
+    val th: Throwable,
+) : Message
