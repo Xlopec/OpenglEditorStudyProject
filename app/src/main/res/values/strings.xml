@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">OpenGL Demo App</string>
     <string name="action_select_image">Select image</string>
+    <string name="badge_operations_overflow">10+</string>
     <string name="message_no_image">No image selected</string>
     <string name="message_adjust_grayscale">Grayscale</string>
     <string name="message_adjust_brightness">Brightness</string>
