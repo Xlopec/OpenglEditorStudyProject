@@ -24,4 +24,5 @@ fun update(
         OnExportImage -> state.withEditor { onImageExportStart() } command DoExportImage(DefaultExportFileName)
         is OnImageExported -> state.withEditor { onImageExportedFinished() } command NotifyImageExported(DefaultExportFileName, message.path)
         is OnImageExportException -> state.withEditor { onImageExportedFinished() } command NotifyException(message.th)
+        is OnDebugModeChanged -> state.onDebugModeUpdated(message.isDebugModeEnabled) command StoreDebugMode(message.isDebugModeEnabled)
     }

@@ -1,42 +1,16 @@
 package com.epam.opengl.edu.ui
 
-import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.GetContent
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.keyframes
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.Icon
-import androidx.compose.material.Scaffold
-import androidx.compose.material.ScaffoldState
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarResult.ActionPerformed
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cached
 import androidx.compose.material.icons.filled.PermMedia
-import androidx.compose.material.rememberScaffoldState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -47,17 +21,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import com.epam.opengl.edu.MimeTypePng
 import com.epam.opengl.edu.R
-import com.epam.opengl.edu.model.AppState
-import com.epam.opengl.edu.model.Command
-import com.epam.opengl.edu.model.DoExportImage
-import com.epam.opengl.edu.model.Message
-import com.epam.opengl.edu.model.NotifyException
-import com.epam.opengl.edu.model.NotifyImageExported
-import com.epam.opengl.edu.model.NotifyTransformationApplied
-import com.epam.opengl.edu.model.OnCropped
-import com.epam.opengl.edu.model.OnDataPrepared
-import com.epam.opengl.edu.model.OnImageExportException
-import com.epam.opengl.edu.model.OnImageExported
+import com.epam.opengl.edu.model.*
 import com.epam.opengl.edu.model.geometry.Size
 import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.saveBitmap
@@ -77,8 +41,11 @@ fun App(
 ) {
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var viewportSize by remember { mutableStateOf<Size?>(null) }
-    val scaffoldState = rememberScaffoldState()
-    val editor = snapshot.currentState.editor
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    val scaffoldState = rememberScaffoldState(drawerState = drawerState)
+    val app = snapshot.currentState
+    val editor = app.editor
     val context = LocalContext.current
 
     LaunchedEffect(selectedUri?.toString(), viewportSize) {
@@ -94,18 +61,21 @@ fun App(
 
     Scaffold(
         scaffoldState = scaffoldState,
-        modifier = Modifier.fillMaxSize().navigationBarsPadding(),
+        modifier = Modifier
+            .fillMaxSize()
+            .navigationBarsPadding(),
         topBar = {
-            InsetsAwareToolbar(
-                title = { Text(text = stringResource(R.string.app_name)) },
-                actions = {
-                    if (editor != null) {
-                        AppToolbarActions(
-                            editor = editor,
-                            handler = handler,
-                        )
-                    }
-                }
+            AppToolbar(
+                editor = editor,
+                drawer = drawerState,
+                handler = handler
+            )
+        },
+        drawerGesturesEnabled = editor == null || drawerState.isOpen,
+        drawerContent = {
+            AppDrawer(
+                state = app,
+                handler = handler
             )
         },
         floatingActionButton = {
@@ -184,7 +154,7 @@ fun App(
                         glState.editor = editor
                     }
 
-                    NotificationsHandler(snapshot, scaffoldState)
+                    AppNotificationsHandler(snapshot, scaffoldState)
 
                     val exportCommand: DoExportImage? = snapshot.commands.firstInstanceOfOrNull()
 
@@ -220,46 +190,6 @@ fun App(
     }
 }
 
-
-@Composable
-private fun NotificationsHandler(
-    snapshot: Snapshot<Message, AppState, Command>,
-    scaffoldState: ScaffoldState,
-) {
-    val context = LocalContext.current
-    val exceptionNotification: NotifyException? = snapshot.commands.firstInstanceOfOrNull()
-
-    if (exceptionNotification != null) {
-        LaunchedEffect(Unit) {
-            scaffoldState.snackbarHostState.showSnackbar(
-                message = "Couldn't save image ${exceptionNotification.th.message ?: ""}",
-                duration = SnackbarDuration.Short
-            )
-        }
-    }
-
-    val exportNotification: NotifyImageExported? = snapshot.commands.firstInstanceOfOrNull()
-
-    if (exportNotification != null) {
-        LaunchedEffect(Unit) {
-            val action = scaffoldState.snackbarHostState.showSnackbar(
-                message = "Image was saved to ${exportNotification.filename}",
-                actionLabel = "Open",
-                duration = SnackbarDuration.Short
-            )
-
-            if (action == ActionPerformed) {
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    setDataAndType(exportNotification.path, MimeTypePng)
-                }
-
-                context.startActivity(intent)
-            }
-        }
-    }
-}
-
 private fun Modifier.animateRotationIfTrue(
     condition: Boolean,
 ) = composed {
@@ -285,5 +215,3 @@ private fun Modifier.animateRotationIfTrue(
 
 private val Command.cropRequested: Boolean
     get() = this is NotifyTransformationApplied && which == Scene::class
-
-private inline fun <reified C : A, A> Collection<A>.firstInstanceOfOrNull() = find { it is C } as? C

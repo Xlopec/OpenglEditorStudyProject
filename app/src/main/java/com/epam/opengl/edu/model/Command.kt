@@ -25,3 +25,8 @@ value class NotifyException(
 value class NotifyTransformationApplied(
     val which: KClass<out Transformation>,
 ) : Command
+
+@JvmInline
+value class StoreDebugMode(
+    val isDebugModeEnabled: Boolean
+) : Command
