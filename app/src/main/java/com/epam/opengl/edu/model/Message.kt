@@ -1,6 +1,7 @@
 package com.epam.opengl.edu.model
 
 import android.net.Uri
+import androidx.compose.ui.graphics.Color
 import kotlin.reflect.KClass
 
 sealed interface Message
@@ -10,6 +11,26 @@ object OnEditorMenuToggled : Message
 @JvmInline
 value class OnGrayscaleUpdated(
     val value: Float,
+) : Message
+
+@JvmInline
+value class OnBrightnessUpdated(
+    val value: Float,
+) : Message
+
+@JvmInline
+value class OnSaturationUpdated(
+    val value: Float,
+) : Message
+
+@JvmInline
+value class OnContrastUpdated(
+    val value: Float,
+) : Message
+
+@JvmInline
+value class OnTintUpdated(
+    val color: Color,
 ) : Message
 
 @JvmInline
