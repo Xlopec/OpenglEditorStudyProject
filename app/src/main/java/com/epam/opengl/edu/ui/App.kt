@@ -1,25 +1,75 @@
 package com.epam.opengl.edu.ui
 
 import android.content.Context
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import android.graphics.Bitmap.CompressFormat
+import android.graphics.PixelFormat
+import android.net.Uri
+import android.opengl.GLSurfaceView
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.GetContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Badge
+import androidx.compose.material.BadgedBox
+import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixNormal
 import androidx.compose.material.icons.filled.AutoFixOff
 import androidx.compose.material.icons.filled.PermMedia
 import androidx.compose.material.icons.filled.Undo
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import com.epam.opengl.edu.R
-import com.epam.opengl.edu.model.*
-import com.epam.opengl.edu.ui.gl.AppGLSurfaceView
+import com.epam.opengl.edu.model.AppState
+import com.epam.opengl.edu.model.Command
+import com.epam.opengl.edu.model.EditMenu
+import com.epam.opengl.edu.model.Message
+import com.epam.opengl.edu.model.OnCropped
+import com.epam.opengl.edu.model.OnDataPrepared
+import com.epam.opengl.edu.model.OnEditorMenuToggled
+import com.epam.opengl.edu.model.OnUndoTransformation
+import com.epam.opengl.edu.model.TransformationApplied
+import com.epam.opengl.edu.model.canUndoTransformations
+import com.epam.opengl.edu.model.geometry.Size
+import com.epam.opengl.edu.model.isDisplayed
+import com.epam.opengl.edu.model.transformation.Scene
+import com.epam.opengl.edu.saveBitmap
+import com.epam.opengl.edu.ui.gl.AppGLRenderer
+import com.epam.opengl.edu.ui.gl.decodeImageSize
 import com.epam.opengl.edu.ui.theme.AppTheme
+import io.github.xlopec.tea.core.Initial
+import io.github.xlopec.tea.core.Snapshot
+import kotlin.math.roundToInt
 
 typealias MessageHandler = (Message) -> Unit
 
@@ -27,10 +77,26 @@ private const val MaxDisplayUndoOperations = 10
 
 @Composable
 fun App(
-    state: AppState,
+    snapshot: Snapshot<Message, AppState, Command>,
     handler: MessageHandler,
-    onChooseImage: () -> Unit,
 ) {
+    val export = remember { mutableStateOf(0) }
+    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var viewportSize by remember { mutableStateOf<Size?>(null) }
+    val state = snapshot.currentState
+    val context = LocalContext.current
+
+    LaunchedEffect(selectedUri?.toString(), viewportSize) {
+        val image = selectedUri
+        val viewport = viewportSize
+
+        if (image != null && viewport != null) {
+            // fixme image might not always needs to be loaded
+            val imageSize = with(context) { image.decodeImageSize() }
+            handler(OnDataPrepared(image = image, imageSize = imageSize, windowSize = viewport))
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -39,12 +105,11 @@ fun App(
                     Text(text = stringResource(R.string.app_name))
                 },
                 actions = {
-                    if (state.image != null) {
+                    if (state.editMenu != null) {
                         if (state.editMenu.canUndoTransformations) {
                             IconButton(onClick = { handler(OnUndoTransformation) }) {
                                 BadgedBox(badge = {
                                     Badge {
-                                        val context = LocalContext.current
                                         Text(
                                             text = with(context) { state.editMenu.undoBadgeText },
                                             style = MaterialTheme.typography.caption
@@ -58,6 +123,16 @@ fun App(
                                 }
                             }
                         }
+                        IconButton(
+                            onClick = {
+                                export.value += 1
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.UploadFile,
+                                contentDescription = null
+                            )
+                        }
                         IconButton(onClick = { handler(OnEditorMenuToggled) }) {
                             Icon(
                                 imageVector = if (state.editMenu.isDisplayed) Icons.Filled.AutoFixOff else Icons.Filled.AutoFixNormal,
@@ -69,8 +144,12 @@ fun App(
             )
         },
         floatingActionButton = {
+            val chooserLauncher = rememberLauncherForActivityResult(GetContent()) { uri: Uri? ->
+                selectedUri = uri
+            }
+
             FloatingActionButton(
-                onClick = onChooseImage
+                onClick = { chooserLauncher.launch("image/*") }
             ) {
                 Icon(
                     imageVector = Icons.Filled.PermMedia,
@@ -79,11 +158,13 @@ fun App(
             }
         },
         bottomBar = {
-            EditMenu(
-                modifier = Modifier.fillMaxWidth(),
-                menu = state.editMenu,
-                handler = handler
-            )
+            if (state.editMenu != null) {
+                EditMenu(
+                    modifier = Modifier.fillMaxWidth(),
+                    menu = state.editMenu,
+                    handler = handler
+                )
+            }
         }
     ) {
         val layoutDirection = LocalLayoutDirection.current
@@ -93,39 +174,93 @@ fun App(
             end = it.calculateEndPadding(layoutDirection),
             top = it.calculateTopPadding()
         )
-        Surface(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize(),
+
+        BoxWithConstraints {
+            val density = LocalDensity.current
+
+            SideEffect {
+                with(density) {
+                    viewportSize = Size(maxWidth.toPx().roundToInt(), maxHeight.toPx().roundToInt())
+                }
+            }
+
+            EditorContent(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize(),
+                state = state,
+                snapshot = snapshot,
+                export = export,
+                onCropped = { handler(OnCropped) },
+                onViewportUpdated = { viewport ->
+                    viewportSize = viewport
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun EditorContent(
+    modifier: Modifier,
+    state: AppState,
+    snapshot: Snapshot<Message, AppState, Command>,
+    export: State<Int>,
+    onCropped: () -> Unit,
+    onViewportUpdated: (Size) -> Unit,
+) {
+    Surface(
+        modifier = modifier,
+    ) {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (state.image == null) {
-                    Text(text = stringResource(R.string.message_no_image))
-                } else {
-                    AndroidView({ context ->
-                        AppGLSurfaceView(
-                            context,
-                            state.image,
-                            state.editMenu.current
-                        )
-                    }) { view ->
-                        with(view.renderer) {
-                            image = state.image
-                            transformations = state.editMenu.displayTransformations
+            if (state.editMenu == null) {
+                Text(text = stringResource(R.string.message_no_image))
+            } else {
+                val context = LocalContext.current
+                val glView = remember {
+                    GLSurfaceView(context).apply {
+                        setEGLContextClientVersion(3)
+                        setEGLConfigChooser(8, 8, 8, 8, 16, 0)
+                        holder.setFormat(PixelFormat.TRANSLUCENT)
+                    }
+                }
+
+                val renderer = remember { AppGLRenderer(context, glView, onCropped, onViewportUpdated) }
+
+                AndroidView({ glView.apply { setRenderer(renderer) } })
+                LaunchedEffect(state.editMenu) {
+                    renderer.state = state.editMenu
+                }
+                SideEffect {
+                    if (snapshot.commands.any { it.cropRequested }) {
+                        renderer.requestCrop()
+                    }
+                }
+
+                LaunchedEffect(export.value) {
+                    if (export.value > 0) {
+                        val bitmap = renderer.bitmap()
+                        try {
+                            context.saveBitmap(bitmap, "output.png", CompressFormat.PNG, 100, "image/png")
+                            Toast.makeText(context, "Image was exported", Toast.LENGTH_LONG).show()
+                        } finally {
+                            bitmap.recycle()
                         }
                     }
                 }
             }
         }
-
     }
 }
 
+private val Command.cropRequested: Boolean
+    get() = this is TransformationApplied && which == Scene::class
+
 context (Context)
-private val EditMenu.undoBadgeText: String
+        private val EditMenu.undoBadgeText: String
     get() = if (previous.size > MaxDisplayUndoOperations) getString(R.string.badge_operations_overflow) else previous.size.toString()
 
 @Preview
@@ -133,9 +268,7 @@ private val EditMenu.undoBadgeText: String
 fun AppPreview() {
     AppTheme(darkTheme = false) {
         App(
-            state = AppState(),
-            handler = {},
-            onChooseImage = {}
-        )
+            snapshot = Initial(AppState()),
+        ) {}
     }
 }
