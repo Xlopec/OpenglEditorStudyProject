@@ -3,10 +3,12 @@ package com.epam.opengl.edu.ui.gl
 import android.content.Context
 import android.graphics.PixelFormat
 import android.opengl.GLSurfaceView
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
@@ -52,6 +54,7 @@ fun rememberGlState(
 fun GLView(
     state: GLViewState,
     modifier: Modifier = Modifier,
+    backgroundColor: Color = MaterialTheme.colors.surface,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -70,5 +73,7 @@ fun GLView(
         modifier = modifier,
         // fixme once we set renderer gl thread starts
         factory = { state.view.apply { setRenderer(state.renderer) } }
-    )
+    ) {
+        state.renderer.backgroundColor = backgroundColor
+    }
 }

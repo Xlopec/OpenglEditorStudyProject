@@ -1,6 +1,5 @@
 package com.epam.opengl.edu.ui
 
-import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -17,27 +16,19 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Badge
-import androidx.compose.material.BadgedBox
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarResult.ActionPerformed
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoFixNormal
-import androidx.compose.material.icons.filled.AutoFixOff
 import androidx.compose.material.icons.filled.Cached
 import androidx.compose.material.icons.filled.PermMedia
-import androidx.compose.material.icons.filled.Undo
-import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,41 +45,30 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import com.epam.opengl.edu.MimeTypePng
 import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.AppState
 import com.epam.opengl.edu.model.Command
 import com.epam.opengl.edu.model.DoExportImage
-import com.epam.opengl.edu.model.Editor
 import com.epam.opengl.edu.model.Message
 import com.epam.opengl.edu.model.NotifyException
 import com.epam.opengl.edu.model.NotifyImageExported
 import com.epam.opengl.edu.model.NotifyTransformationApplied
 import com.epam.opengl.edu.model.OnCropped
 import com.epam.opengl.edu.model.OnDataPrepared
-import com.epam.opengl.edu.model.OnEditorMenuToggled
-import com.epam.opengl.edu.model.OnExportImage
 import com.epam.opengl.edu.model.OnImageExportException
 import com.epam.opengl.edu.model.OnImageExported
-import com.epam.opengl.edu.model.OnUndoTransformation
-import com.epam.opengl.edu.model.canUndoTransformations
 import com.epam.opengl.edu.model.geometry.Size
-import com.epam.opengl.edu.model.isDisplayed
 import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.saveBitmap
 import com.epam.opengl.edu.ui.gl.GLView
 import com.epam.opengl.edu.ui.gl.decodeImageSize
 import com.epam.opengl.edu.ui.gl.rememberGlState
-import com.epam.opengl.edu.ui.theme.AppTheme
-import io.github.xlopec.tea.core.Initial
 import io.github.xlopec.tea.core.Snapshot
 import java.io.IOException
 import kotlin.math.roundToInt
 
 typealias MessageHandler = (Message) -> Unit
-
-private const val MaxDisplayUndoOperations = 10
 
 @Composable
 fun App(
@@ -114,15 +94,13 @@ fun App(
 
     Scaffold(
         scaffoldState = scaffoldState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().navigationBarsPadding(),
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(text = stringResource(R.string.app_name))
-                },
+            InsetsAwareToolbar(
+                title = { Text(text = stringResource(R.string.app_name)) },
                 actions = {
                     if (editor != null) {
-                        AppToolbar(
+                        AppToolbarActions(
                             editor = editor,
                             handler = handler,
                         )
@@ -233,52 +211,15 @@ fun App(
                         }
                     }
 
-                    GLView(state = glState)
+                    GLView(
+                        state = glState,
+                    )
                 }
             }
         }
     }
 }
 
-@Composable
-private fun AppToolbar(
-    editor: Editor,
-    handler: MessageHandler,
-) {
-    if (editor.canUndoTransformations) {
-        IconButton(onClick = { handler(OnUndoTransformation) }) {
-            BadgedBox(badge = {
-                Badge {
-                    val context = LocalContext.current
-                    Text(
-                        text = with(context) { editor.undoBadgeText },
-                        style = MaterialTheme.typography.caption
-                    )
-                }
-            }) {
-                Icon(
-                    imageVector = Icons.Filled.Undo,
-                    contentDescription = null
-                )
-            }
-        }
-    }
-    IconButton(
-        enabled = !editor.isExportingImage,
-        onClick = { handler(OnExportImage) }
-    ) {
-        Icon(
-            imageVector = Icons.Filled.UploadFile,
-            contentDescription = null
-        )
-    }
-    IconButton(onClick = { handler(OnEditorMenuToggled) }) {
-        Icon(
-            imageVector = if (editor.isDisplayed) Icons.Filled.AutoFixOff else Icons.Filled.AutoFixNormal,
-            contentDescription = null
-        )
-    }
-}
 
 @Composable
 private fun NotificationsHandler(
@@ -346,17 +287,3 @@ private val Command.cropRequested: Boolean
     get() = this is NotifyTransformationApplied && which == Scene::class
 
 private inline fun <reified C : A, A> Collection<A>.firstInstanceOfOrNull() = find { it is C } as? C
-
-context (Context)
-        private val Editor.undoBadgeText: String
-    get() = if (previous.size > MaxDisplayUndoOperations) getString(R.string.badge_operations_overflow) else previous.size.toString()
-
-@Preview
-@Composable
-fun AppPreview() {
-    AppTheme(darkTheme = false) {
-        App(
-            snapshot = Initial(AppState()),
-        ) {}
-    }
-}
