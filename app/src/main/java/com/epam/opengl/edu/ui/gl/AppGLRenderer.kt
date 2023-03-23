@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.opengl.*
+import android.opengl.GLSurfaceView.RENDERMODE_CONTINUOUSLY
 import android.opengl.GLSurfaceView.RENDERMODE_WHEN_DIRTY
 import android.view.MotionEvent
 import android.view.View
@@ -26,6 +27,7 @@ class AppGLRenderer(
     editor: Editor,
     private val onCropped: () -> Unit,
     private val onViewportSizeChange: (Size) -> Unit,
+    onFpsUpdated: (UInt) -> Unit,
     isDebugModeEnabled: Boolean = false,
 ) : GLSurfaceView.Renderer, View.OnTouchListener {
 
@@ -64,10 +66,12 @@ class AppGLRenderer(
             val old = field
             field = value
             if (old != value) {
-                view.requestRender()
+                fpsCounter.reset()
+                view.renderMode = if (value) RENDERMODE_CONTINUOUSLY else RENDERMODE_WHEN_DIRTY
             }
         }
 
+    private val fpsCounter = FpsCounter(onFpsUpdated)
     private val verticesBuffer = floatBufferOf(
         -1f, -1f,
         1f, -1f,
@@ -114,7 +118,7 @@ class AppGLRenderer(
     }
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
-        view.renderMode = RENDERMODE_WHEN_DIRTY
+        view.renderMode = if (isDebugModeEnabled) RENDERMODE_CONTINUOUSLY else RENDERMODE_WHEN_DIRTY
         // todo temp workaround to dispose captured gl context
         viewTransformation = ViewTransformation(context, verticesBuffer, textureBuffer)
         cropTransformation = CropTransformation(context, verticesBuffer, textureBuffer)
@@ -223,6 +227,10 @@ class AppGLRenderer(
 
         if (cropWasRequested) {
             onCropped()
+        }
+
+        if (isDebugModeEnabled) {
+            fpsCounter.onFrame()
         }
     }
 

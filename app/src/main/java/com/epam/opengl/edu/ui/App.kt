@@ -9,6 +9,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -38,11 +39,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.epam.opengl.edu.MimeTypePng
 import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.AppState
@@ -152,7 +155,7 @@ fun App(
                 .fillMaxSize(),
         ) {
             BoxWithConstraints(
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.TopEnd
             ) {
                 val density = LocalDensity.current
 
@@ -163,7 +166,12 @@ fun App(
                 }
 
                 if (editor == null) {
-                    Text(text = stringResource(R.string.message_no_image))
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = stringResource(R.string.message_no_image))
+                    }
                 } else {
                     val glState = rememberGlState(
                         editor = editor,
@@ -218,6 +226,16 @@ fun App(
                     GLView(
                         state = glState,
                     )
+
+                    if (app.isDebugModeEnabled) {
+                        Surface(
+                            modifier = Modifier
+                                .alpha(0.8f)
+                                .padding(8.dp)
+                        ) {
+                            Text(text = stringResource(R.string.debug_message_fps_counter, glState.fps.toInt()))
+                        }
+                    }
                 }
             }
         }

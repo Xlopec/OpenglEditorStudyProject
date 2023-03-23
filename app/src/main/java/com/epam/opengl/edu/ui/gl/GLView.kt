@@ -6,7 +6,10 @@ import android.opengl.GLSurfaceView
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -31,7 +34,19 @@ class GLViewState(
         holder.setFormat(PixelFormat.TRANSLUCENT)
     }
 
-    internal val renderer = AppGLRenderer(context, view, editor, onCropped, onViewportUpdated)
+    internal val renderer = AppGLRenderer(
+        context = context,
+        view = view,
+        editor = editor,
+        onCropped = onCropped,
+        onViewportSizeChange = onViewportUpdated,
+        onFpsUpdated = {
+            fps = it
+        }
+    )
+
+    var fps by mutableStateOf(0U)
+        private set
 
     var editor by renderer::editor
 
