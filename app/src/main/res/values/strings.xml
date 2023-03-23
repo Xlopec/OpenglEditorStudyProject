@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">OpenGL Image Editor</string>
+    <string name="app_name">Image Editor</string>
 
     <string name="action_select_image">Select image</string>
     <string name="action_open_image">Open</string>
