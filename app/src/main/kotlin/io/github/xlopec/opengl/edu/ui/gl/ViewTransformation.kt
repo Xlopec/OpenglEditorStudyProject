@@ -24,12 +24,12 @@ class ViewTransformation(
     context (GL)
     fun render(
         vPMatrix: FloatArray,
-        targetFbo: Int,
-        sourceTexture: Int,
+        frameBuffer: FrameBuffer,
+        sourceTexture: Texture,
         textureSize: Size,
         windowSize: Size,
     ) {
-        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, targetFbo)
+        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffer.value)
         GLES31.glViewport(0, 0, windowSize.width, windowSize.height)
         GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
         GLES31.glUseProgram(program)
@@ -40,7 +40,7 @@ class ViewTransformation(
         val texturePositionHandle = GLES31.glGetAttribLocation(program, "aTexPosition")
         GLES31.glVertexAttribPointer(texturePositionHandle, 2, GLES31.GL_FLOAT, false, 0, textureCoordinates)
         GLES31.glEnableVertexAttribArray(texturePositionHandle)
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, sourceTexture)
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, sourceTexture.value)
         GLES31.glUniform1i(textureHandle, 0)
 
         if (textureSize.isPortrait) {

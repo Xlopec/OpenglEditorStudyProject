@@ -38,7 +38,7 @@ class GLViewState(
 
     var isDebugModeEnabled by view::isDebugModeEnabled
 
-    suspend fun bitmap() = view.bitmap()
+    suspend fun exportFrame() = view.exportFrame()
 
     suspend fun crop() = view.crop()
 }

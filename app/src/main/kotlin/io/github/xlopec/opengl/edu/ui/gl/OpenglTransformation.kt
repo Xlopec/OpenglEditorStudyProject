@@ -8,8 +8,8 @@ interface OpenglTransformation {
     context (GL)
     fun draw(
         transformations: Transformations,
-        fbo: Int,
-        texture: Int,
+        frameBuffer: FrameBuffer,
+        sourceTexture: Texture,
     )
 
 }

@@ -204,7 +204,7 @@ fun App(
                         LaunchedEffect(Unit) {
                             var bitmap: Bitmap? = null
                             try {
-                                bitmap = glState.bitmap()
+                                bitmap = glState.exportFrame()
                                 handler(
                                     OnImageExported(
                                         path = context.saveBitmap(

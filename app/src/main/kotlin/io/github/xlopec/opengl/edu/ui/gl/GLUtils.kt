@@ -13,6 +13,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 fun readTextureToBuffer(
+    frameBuffer: FrameBuffer,
     offset: Offset,
     size: Size,
 ): Buffer {
@@ -20,6 +21,7 @@ fun readTextureToBuffer(
         .order(ByteOrder.nativeOrder())
         .position(0)
 
+    GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffer.value)
     GLES31.glReadPixels(
         /* x = */ offset.x,
         /* y = */ offset.y,
@@ -34,10 +36,11 @@ fun readTextureToBuffer(
 }
 
 fun readTextureToBitmap(
+    frameBuffer: FrameBuffer,
     size: Size,
     sceneOffset: Offset = Offset(0, 0),
 ): Bitmap {
     val bitmap = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
-    bitmap.copyPixelsFromBuffer(readTextureToBuffer(sceneOffset, size))
+    bitmap.copyPixelsFromBuffer(readTextureToBuffer(frameBuffer, sceneOffset, size))
     return bitmap
 }

@@ -22,11 +22,15 @@ inline val Size.width: Int
 inline val Size.height: Int
     get() = unpackInt2(value)
 
+operator fun Size.component1(): Int = width
+
+operator fun Size.component2(): Int = height
+
 operator fun Size.minus(
-    offset: Offset
+    offset: Offset,
 ): Size = Size(width = width - offset.x, height = height - offset.y)
 
 operator fun Size.plus(
-    offset: Offset
+    offset: Offset,
 ): Size = Size(width = width + offset.x, height = height + offset.y)
 

@@ -8,12 +8,17 @@ import androidx.compose.ui.graphics.Color
 import io.github.xlopec.opengl.edu.model.Editor
 import io.github.xlopec.opengl.edu.model.displayCropSelection
 import io.github.xlopec.opengl.edu.model.displayTransformations
+import io.github.xlopec.opengl.edu.model.geometry.Size
 import io.github.xlopec.opengl.edu.model.geometry.height
+import io.github.xlopec.opengl.edu.model.geometry.minus
 import io.github.xlopec.opengl.edu.model.geometry.width
 import io.github.xlopec.opengl.edu.model.geometry.x
 import io.github.xlopec.opengl.edu.model.geometry.y
 import io.github.xlopec.opengl.edu.model.transformation.Scene
+import io.github.xlopec.opengl.edu.model.transformation.Transformations
+import io.github.xlopec.opengl.edu.model.transformation.leftTopImageOffset
 import io.github.xlopec.opengl.edu.model.transformation.ratio
+import io.github.xlopec.opengl.edu.model.transformation.rightBottomImageOffset
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -23,6 +28,7 @@ context (GL)
 internal class GlRendererDelegate(
     context: Context,
     bitmap: Bitmap,
+    windowSize: Size,
 ) {
 
     private companion object {
@@ -38,6 +44,8 @@ internal class GlRendererDelegate(
             0f, 0f,
             1f, 0f
         )
+
+        val DisplayFrameBuffer = FrameBuffer(0)
     }
 
     private val colorTransformations = listOf(
@@ -55,105 +63,167 @@ internal class GlRendererDelegate(
     }
     private val viewTransformation = ViewTransformation(context, VerticesBuffer, TextureBuffer)
     private val cropTransformation = CropTransformation(context, VerticesBuffer, TextureBuffer)
-    private val offscreenRenderer = OffscreenRenderer(colorTransformations.size + 1, bitmap)
+    private val sourceFbo = Fbo.forBitmap(bitmap)
+    private val transformationFbos = Fbo.forPingPong(windowSize, colorTransformations.size + 1)
 
     fun updateImage(
         bitmap: Bitmap,
-    ) = offscreenRenderer.updateTextures(bitmap)
+    ) = sourceFbo.updateImage(bitmap)
 
-    fun captureScene(
-        scene: Scene,
-    ): Bitmap {
-        GLES31.glViewport(0, 0, scene.imageSize.width, scene.imageSize.height)
-        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, offscreenRenderer.cropFrameBuffer)
-        return readTextureToBitmap(scene.imageSize)
-    }
-
-    fun onDrawFrame(
+    fun onExportFrame(
         backgroundColor: Color,
         editor: Editor,
-        cropRequested: Boolean,
         isDebugModeEnabled: Boolean,
-    ) {
-        GLES31.glClearColor(
-            backgroundColor.red,
-            backgroundColor.green,
-            backgroundColor.blue,
-            backgroundColor.alpha
-        )
+    ): Bitmap {
+        glClearColor(backgroundColor)
         val transformations = editor.displayTransformations
         val scene = transformations.scene
 
+        transformationFbos.resizeTextures(scene.imageSize)
         GLES31.glViewport(0, 0, scene.imageSize.width, scene.imageSize.height)
-        // we're using previous texture as target for next transformations, render pipeline looks like the following
-        // original texture -> grayscale transformation -> texture[1];
-        // texture[1] -> hsv transformation -> texture[2];
-        // ....
-        // texture[last modified texture + 1] -> matrix transformation -> screen
-        colorTransformations.fastForEachIndexed { index, transformation ->
-            transformation.draw(
-                transformations = transformations,
-                fbo = offscreenRenderer.fbo(index),
-                // fbo index -> txt index mapping: 0 -> 0; 1 -> 1; 2 -> 2; 3 -> 1; 4 -> 2...
-                texture = offscreenRenderer.sourceTextureForFbo(index),
-            )
+
+        val lastColorTransformTexture = drawColorTransformations(transformations)
+        val cropFbo = transformationFbos[colorTransformations.size]
+
+        cropTransformation.clearMarks(
+            transformations = transformations,
+            frameBuffer = cropFbo.frameBuffer,
+            sourceTexture = lastColorTransformTexture,
+            isDebugEnabled = isDebugModeEnabled,
+        )
+
+        val bitmap = readTextureToBitmap(cropFbo.frameBuffer, scene.imageSize)
+
+        transformationFbos.resizeTextures(scene.windowSize)
+        return bitmap
+    }
+
+    fun onCrop(
+        backgroundColor: Color,
+        editor: Editor,
+        isDebugModeEnabled: Boolean,
+    ) {
+        glClearColor(backgroundColor)
+        val transformations = editor.displayTransformations
+        val scene = transformations.scene
+
+        GLES31.glViewport(0, 0, scene.windowSize.width, scene.windowSize.height)
+
+        val lastColorTransformTexture = drawColorTransformations(transformations)
+        val cropFbo = transformationFbos[colorTransformations.size]
+
+        cropTransformation.clearMarks(
+            transformations = transformations,
+            frameBuffer = cropFbo.frameBuffer,
+            sourceTexture = lastColorTransformTexture,
+            isDebugEnabled = isDebugModeEnabled,
+        )
+
+        with(scene) {
+            val topLeft = leftTopImageOffset
+            val bottomRight = rightBottomImageOffset
+            val croppedSize = imageSize - topLeft - bottomRight
+            sourceFbo.resize(topLeft, croppedSize)
         }
 
-        val readFromTexture = offscreenRenderer.sourceTextureForFbo(offscreenRenderer.fboCount - 1)
+        drawOnDisplay(scene, cropFbo.texture)
+    }
 
-        if (cropRequested) {
-            cropTransformation.crop(
-                transformations = transformations,
-                fbo = offscreenRenderer.cropFrameBuffer,
-                texture = readFromTexture,
-                offscreenRenderer = offscreenRenderer,
-                isDebugEnabled = isDebugModeEnabled,
-            )
-        } else if (editor.displayCropSelection) {
+    fun onDrawNormal(
+        backgroundColor: Color,
+        editor: Editor,
+        isDebugModeEnabled: Boolean,
+    ) {
+        glClearColor(backgroundColor)
+        val transformations = editor.displayTransformations
+        val scene = transformations.scene
+
+        GLES31.glViewport(0, 0, scene.windowSize.width, scene.windowSize.height)
+
+        val lastColorTransformTexture = drawColorTransformations(transformations)
+        val cropFbo = transformationFbos[colorTransformations.size]
+        val cropFrameBuffer = cropFbo.frameBuffer
+
+        if (editor.displayCropSelection) {
             cropTransformation.drawSelection(
                 transformations = transformations,
-                fbo = offscreenRenderer.cropFrameBuffer,
-                texture = readFromTexture,
+                frameBuffer = cropFrameBuffer,
+                texture = lastColorTransformTexture,
                 isDebugEnabled = isDebugModeEnabled,
             )
         } else {
             cropTransformation.drawNormal(
-                fbo = offscreenRenderer.cropFrameBuffer,
-                texture = readFromTexture,
+                frameBuffer = cropFrameBuffer,
+                texture = lastColorTransformTexture,
                 transformations = transformations,
                 isDebugEnabled = isDebugModeEnabled,
             )
         }
 
-        with(scene) {
-            val frustumOffsetX = 2 * windowSize.ratio * sceneOffset.x / windowSize.width
-            val frustumOffsetY = 2 * sceneOffset.y / windowSize.height
+        drawOnDisplay(scene, cropFbo.texture)
+    }
 
-            Matrix.frustumM(
-                /* m = */ projectionMatrix,
-                /* offset = */ 0,
-                /* left = */ -windowSize.ratio - frustumOffsetX,
-                /* right = */ windowSize.ratio - frustumOffsetX,
-                /* bottom = */ -1f + frustumOffsetY,
-                /* top = */ 1f + frustumOffsetY,
-                /* near = */ 3f,
-                /* far = */ 7f
-            )
+    // we're using previous texture as target for next transformations, render pipeline looks like the following
+    // original texture -> grayscale transformation -> texture[1];
+    // texture[1] -> hsv transformation -> texture[2];
+    // ....
+    // texture[last modified texture + 1] -> matrix transformation -> screen
+    context (GL)
+            private fun drawColorTransformations(
+        transformations: Transformations,
+    ) = colorTransformations.fastFoldIndexed(sourceFbo.texture) { index, sourceTexture, transformation ->
+        transformation.draw(
+            transformations = transformations,
+            frameBuffer = transformationFbos[index].frameBuffer,
+            // fbo index -> txt index mapping: 0 -> 0; 1 -> 1; 2 -> 2; 3 -> 1; 4 -> 2...
+            sourceTexture = sourceTexture,
+        )
+        transformationFbos[index].texture
+    }
 
-            // Calculate the projection and view transformation
-            Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-            viewTransformation.render(
-                vPMatrix,
-                0,
-                offscreenRenderer.sourceTextureForFbo(offscreenRenderer.fboCount),
-                imageSize,
-                windowSize
-            )
-        }
+    context (GL)
+            private fun drawOnDisplay(
+        scene: Scene,
+        sourceTexture: Texture,
+    ) = with(scene) {
+        val frustumOffsetX = 2 * windowSize.ratio * sceneOffset.x / windowSize.width
+        val frustumOffsetY = 2 * sceneOffset.y / windowSize.height
 
+        Matrix.frustumM(
+            /* m = */ projectionMatrix,
+            /* offset = */ 0,
+            /* left = */ -windowSize.ratio - frustumOffsetX,
+            /* right = */ windowSize.ratio - frustumOffsetX,
+            /* bottom = */ -1f + frustumOffsetY,
+            /* top = */ 1f + frustumOffsetY,
+            /* near = */ 3f,
+            /* far = */ 7f
+        )
+
+        // Calculate the projection and view transformation
+        Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
+        viewTransformation.render(
+            vPMatrix = vPMatrix,
+            frameBuffer = DisplayFrameBuffer,
+            sourceTexture = sourceTexture,
+            textureSize = imageSize,
+            windowSize = windowSize
+        )
     }
 
 }
+
+context (GL)
+        private fun Iterable<Fbo>.resizeTextures(
+    size: Size,
+) = forEach { fbo ->
+    fbo.texture.size = size
+}
+
+context (GL)
+        private fun glClearColor(
+    color: Color,
+) = GLES31.glClearColor(color.red, color.green, color.blue, color.alpha)
 
 private fun floatBufferOf(
     vararg data: Float,

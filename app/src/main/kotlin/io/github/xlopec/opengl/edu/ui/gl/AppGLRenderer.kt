@@ -84,9 +84,7 @@ class AppGLRenderer(
     override fun onSurfaceCreated(
         gl: GL10,
         config: EGLConfig,
-    ) = with(gl) {
-        initDelegateIfNeeded()
-    }
+    ) = Unit
 
     override fun onDrawFrame(
         gl: GL10,
@@ -94,10 +92,9 @@ class AppGLRenderer(
         val isDebugEnabled = isDebugModeEnabled
         val delegate = renderDelegate ?: return@with
 
-        delegate.onDrawFrame(
+        delegate.onDrawNormal(
             backgroundColor = backgroundColor,
             editor = editor,
-            cropRequested = false,
             isDebugModeEnabled = isDebugEnabled,
         )
 
@@ -112,24 +109,33 @@ class AppGLRenderer(
     }
 
     // fixme rework, also, it'll stuck forever if glThread is stopped before event is enqueued
-    suspend fun bitmap(): Bitmap = suspendCoroutine { continuation ->
+    suspend fun exportFrame(): Bitmap = suspendCoroutine { continuation ->
         view.queueEvent {
-            continuation.resume(renderDelegateOrThrow.captureScene(editor.displayTransformations.scene))
+            try {
+                val delegate = renderDelegateOrThrow
+                val bitmap = delegate.onExportFrame(
+                    backgroundColor = backgroundColor,
+                    editor = editor,
+                    isDebugModeEnabled = isDebugModeEnabled
+                )
+                continuation.resume(bitmap)
+            } catch (e: Exception) {
+                continuation.resumeWithException(e)
+            }
         }
     }
 
     suspend fun crop() = suspendCoroutine { continuation ->
         view.queueEvent {
             try {
-                renderDelegateOrThrow.onDrawFrame(
+                renderDelegateOrThrow.onCrop(
                     backgroundColor = backgroundColor,
                     editor = editor,
-                    cropRequested = true,
                     isDebugModeEnabled = isDebugModeEnabled
                 )
                 continuation.resume(Unit)
-            } catch (th: Throwable) {
-                continuation.resumeWithException(th)
+            } catch (e: Exception) {
+                continuation.resumeWithException(e)
             }
         }
     }
@@ -160,7 +166,7 @@ class AppGLRenderer(
             val scene = editor.displayTransformations.scene
             // restores crop state by reading subregion of the original image
             val bitmap = with(context) { editor.image.asBitmap(scene.subImage) }
-            renderDelegate = GlRendererDelegate(context, bitmap)
+            renderDelegate = GlRendererDelegate(context, bitmap, scene.windowSize)
             bitmap.recycle()
             view.renderMode = if (isDebugModeEnabled) RENDERMODE_CONTINUOUSLY else RENDERMODE_WHEN_DIRTY
         }

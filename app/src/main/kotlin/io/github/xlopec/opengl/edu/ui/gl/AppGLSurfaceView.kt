@@ -40,7 +40,7 @@ class AppGLSurfaceView(
 
     var backgroundColor by renderer::backgroundColor
 
-    suspend fun bitmap() = renderer.bitmap()
+    suspend fun exportFrame() = renderer.exportFrame()
 
     suspend fun crop() = renderer.crop()
 
