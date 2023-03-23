@@ -31,7 +31,7 @@ class CropTransformation(
         transformations: Transformations,
         fbo: Int,
         texture: Int,
-        textures: Textures,
+        offscreenRenderer: OffscreenRenderer,
         isDebugEnabled: Boolean,
     ) {
         val scene = transformations.scene
@@ -41,14 +41,10 @@ class CropTransformation(
             GLES31.glUniform1f(borderWidthHandle, 0f)
         }
         with(scene) {
-            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures.originalTexture)
-
             val topLeft = leftTopImageOffset
             val bottomRight = rightBottomImageOffset
             val croppedSize = imageSize - topLeft - bottomRight
-            val buffer = readTextureToBuffer(topLeft, croppedSize)
-
-            textures.updateTextures(buffer, croppedSize)
+            offscreenRenderer.resizeTextures(topLeft, croppedSize)
         }
     }
 

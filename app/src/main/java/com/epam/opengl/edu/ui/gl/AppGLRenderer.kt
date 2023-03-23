@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import com.epam.opengl.edu.model.*
 import com.epam.opengl.edu.model.geometry.*
 import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.opengles.GL
 import javax.microedition.khronos.opengles.GL10
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -44,8 +45,11 @@ class AppGLRenderer(
 
             if (imageChanged) {
                 view.queueEvent {
-                    with(context) {
-                        renderDelegate!!.updateImage(value.image)
+                    val delegate = renderDelegate
+                    if (delegate != null) {
+                        val bitmap = with(context) { value.image.asBitmap() }
+                        delegate.updateImage(bitmap)
+                        bitmap.recycle()
                     }
                 }
             }
@@ -70,6 +74,7 @@ class AppGLRenderer(
         }
 
     private val fpsCounter = FpsCounter(onFpsUpdated)
+    @Volatile
     private var renderDelegate: GlRendererDelegate? = null
     private inline val renderDelegateOrThrow: GlRendererDelegate
         get() = requireNotNull(renderDelegate) { "gl renderer gone" }
@@ -78,8 +83,7 @@ class AppGLRenderer(
         gl: GL10,
         config: EGLConfig,
     ) = with(gl) {
-        renderDelegate = GlRendererDelegate(context, editor.image)
-        view.renderMode = if (isDebugModeEnabled) RENDERMODE_CONTINUOUSLY else RENDERMODE_WHEN_DIRTY
+        initDelegateIfNeeded()
     }
 
     override fun onDrawFrame(
@@ -102,6 +106,7 @@ class AppGLRenderer(
 
     fun onSurfaceDestroyed() {
         renderDelegate = null
+        fpsCounter.reset()
     }
 
     // fixme rework, also, it'll stuck forever if glThread is stopped before event is enqueued
@@ -131,7 +136,8 @@ class AppGLRenderer(
         gl: GL10,
         width: Int,
         height: Int,
-    ) {
+    ) = with(gl) {
+        initDelegateIfNeeded()
         onViewportSizeChange(Size(width, height))
     }
 
@@ -144,6 +150,16 @@ class AppGLRenderer(
         editor.displayTransformations.scene.onTouch(event, selectionMode)
         view.requestRender()
         return true
+    }
+
+    context (GL)
+            private fun initDelegateIfNeeded() {
+        if (renderDelegate == null) {
+            val bitmap = with(context) { editor.image.asBitmap() }
+            renderDelegate = GlRendererDelegate(context, bitmap)
+            bitmap.recycle()
+            view.renderMode = if (isDebugModeEnabled) RENDERMODE_CONTINUOUSLY else RENDERMODE_WHEN_DIRTY
+        }
     }
 
 }

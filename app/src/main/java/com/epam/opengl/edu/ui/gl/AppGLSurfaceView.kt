@@ -45,7 +45,7 @@ class AppGLSurfaceView(
     suspend fun crop() = renderer.crop()
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
-        renderer.onSurfaceDestroyed()
         super.surfaceDestroyed(holder)
+        renderer.onSurfaceDestroyed()
     }
 }

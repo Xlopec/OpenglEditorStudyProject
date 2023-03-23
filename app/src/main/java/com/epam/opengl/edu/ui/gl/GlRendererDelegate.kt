@@ -2,7 +2,6 @@ package com.epam.opengl.edu.ui.gl
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.net.Uri
 import android.opengl.GLES31
 import android.opengl.Matrix
 import androidx.compose.ui.graphics.Color
@@ -23,11 +22,10 @@ import javax.microedition.khronos.opengles.GL
 context (GL)
 internal class GlRendererDelegate(
     context: Context,
-    image: Uri,
+    bitmap: Bitmap,
 ) {
 
     private companion object {
-        const val INITIAL_TEXTURE_SIZE = 1
         val VerticesBuffer = floatBufferOf(
             -1f, -1f,
             1f, -1f,
@@ -50,8 +48,6 @@ internal class GlRendererDelegate(
         GaussianBlurTransformation(context, VerticesBuffer, TextureBuffer),
     )
 
-    private val frameBuffers = FrameBuffers(colorTransformations.size + 1)
-    private val textures = Textures()
     private val projectionMatrix = FloatArray(16)
     private val vPMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16).also { matrix ->
@@ -59,42 +55,17 @@ internal class GlRendererDelegate(
     }
     private val viewTransformation = ViewTransformation(context, VerticesBuffer, TextureBuffer)
     private val cropTransformation = CropTransformation(context, VerticesBuffer, TextureBuffer)
+    private val offscreenRenderer = OffscreenRenderer(colorTransformations.size + 1, bitmap)
 
-    init {
-        GLES31.glGenTextures(textures.size, textures.array, 0)
-        GLES31.glGenFramebuffers(frameBuffers.size, frameBuffers.array, 0)
-        // setup color attachments and bind them to corresponding frame buffers
-        // note that textures are shifted by one!
-        // buffers binding look like the following:
-        // fbo 0 (screen bound) -> texture[0] (original texture)
-        // frameBuffers[0] -> textures[1]
-        // frameBuffers[1] -> textures[2]
-        // frameBuffers[2] -> textures[1]
-        // frameBuffers[3] -> textures[2]
-        // ...
-        for (frameBufferIndex in 0 until frameBuffers.size) {
-            setupFrameBuffer(frameBuffers[frameBufferIndex], textures.bindTextureFor(frameBufferIndex))
-        }
-
-        with(context) {
-            updateImage(image)
-        }
-    }
-
-    context (Context)
     fun updateImage(
-        image: Uri,
-    ) {
-        val bitmap = image.asBitmap()
-        textures.updateTextures(bitmap)
-        bitmap.recycle()
-    }
+        bitmap: Bitmap,
+    ) = offscreenRenderer.updateTextures(bitmap)
 
     fun captureScene(
-        scene: Scene
+        scene: Scene,
     ): Bitmap {
         GLES31.glViewport(0, 0, scene.imageSize.width, scene.imageSize.height)
-        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffers.cropFrameBuffer)
+        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, offscreenRenderer.cropFrameBuffer)
         return readTextureToBitmap(scene.imageSize)
     }
 
@@ -102,7 +73,7 @@ internal class GlRendererDelegate(
         backgroundColor: Color,
         editor: Editor,
         cropRequested: Boolean,
-        isDebugModeEnabled: Boolean
+        isDebugModeEnabled: Boolean,
     ) {
         GLES31.glClearColor(
             backgroundColor.red,
@@ -122,32 +93,32 @@ internal class GlRendererDelegate(
         colorTransformations.fastForEachIndexed { index, transformation ->
             transformation.draw(
                 transformations = transformations,
-                fbo = frameBuffers[index],
+                fbo = offscreenRenderer.fbo(index),
                 // fbo index -> txt index mapping: 0 -> 0; 1 -> 1; 2 -> 2; 3 -> 1; 4 -> 2...
-                texture = textures.readTextureFor(index),
+                texture = offscreenRenderer.sourceTextureForFbo(index),
             )
         }
 
-        val readFromTexture = textures.readTextureFor(frameBuffers.size - 1)
+        val readFromTexture = offscreenRenderer.sourceTextureForFbo(offscreenRenderer.fboCount - 1)
 
         if (cropRequested) {
             cropTransformation.crop(
                 transformations = transformations,
-                fbo = frameBuffers.cropFrameBuffer,
+                fbo = offscreenRenderer.cropFrameBuffer,
                 texture = readFromTexture,
-                textures = textures,
+                offscreenRenderer = offscreenRenderer,
                 isDebugEnabled = isDebugModeEnabled,
             )
         } else if (editor.displayCropSelection) {
             cropTransformation.drawSelection(
                 transformations = transformations,
-                fbo = frameBuffers.cropFrameBuffer,
+                fbo = offscreenRenderer.cropFrameBuffer,
                 texture = readFromTexture,
                 isDebugEnabled = isDebugModeEnabled,
             )
         } else {
             cropTransformation.drawNormal(
-                fbo = frameBuffers.cropFrameBuffer,
+                fbo = offscreenRenderer.cropFrameBuffer,
                 texture = readFromTexture,
                 transformations = transformations,
                 isDebugEnabled = isDebugModeEnabled,
@@ -171,43 +142,15 @@ internal class GlRendererDelegate(
 
             // Calculate the projection and view transformation
             Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-            viewTransformation.render(vPMatrix, 0, textures.readTextureFor(frameBuffers.size), imageSize, windowSize)
+            viewTransformation.render(
+                vPMatrix,
+                0,
+                offscreenRenderer.sourceTextureForFbo(offscreenRenderer.fboCount),
+                imageSize,
+                windowSize
+            )
         }
 
-    }
-
-    private fun setupFrameBuffer(
-        frameBuffer: Int,
-        texture: Int,
-    ) {
-        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffer)
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-        GLES31.glTexImage2D(
-            /* target = */ GLES31.GL_TEXTURE_2D,
-            /* level = */ 0,
-            /* internalformat = */ GLES31.GL_RGBA,
-            /* width = */ INITIAL_TEXTURE_SIZE,
-            /* height = */ INITIAL_TEXTURE_SIZE,
-            /* border = */ 0,
-            /* format = */ GLES31.GL_RGBA,
-            /* type = */ GLES31.GL_UNSIGNED_BYTE,
-            /* pixels = */ null
-        )
-        GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR)
-        GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_LINEAR)
-        GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S, GLES31.GL_CLAMP_TO_EDGE)
-        GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T, GLES31.GL_CLAMP_TO_EDGE)
-
-        GLES31.glFramebufferTexture2D(
-            GLES31.GL_FRAMEBUFFER,
-            GLES31.GL_COLOR_ATTACHMENT0,
-            GLES31.GL_TEXTURE_2D,
-            texture,
-            0
-        )
-        check(GLES31.glCheckFramebufferStatus(GLES31.GL_FRAMEBUFFER) == GLES31.GL_FRAMEBUFFER_COMPLETE) {
-            "incomplete buffer $frameBuffer, texture $texture"
-        }
     }
 
 }
