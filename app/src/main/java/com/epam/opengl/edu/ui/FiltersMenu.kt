@@ -26,19 +26,19 @@ fun FiltersMenu() {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             FilterItem(image = Icons.Filled.Brightness3, enabled = true) {
-
+                // TODO
             }
 
             FilterItem(image = Icons.Filled.Contrast, enabled = true) {
-
+                // TODO
             }
 
             FilterItem(image = Icons.Filled.Crop, enabled = true) {
-
+                // TODO
             }
 
             FilterItem(image = Icons.Filled.BrightnessAuto, enabled = true) {
-
+                // TODO
             }
         }
     }

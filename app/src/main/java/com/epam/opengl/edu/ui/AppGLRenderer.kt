@@ -16,19 +16,22 @@ import org.intellij.lang.annotations.Language
 
 class AppGLRenderer(
     private val context: Context,
-    image: Uri,
+    initialImage: Uri,
     private val view: GLSurfaceView
 ) : GLSurfaceView.Renderer {
 
-    init {
-        println("init renderer")
-    }
-
-    var image: Uri = image
+    var image: Uri = initialImage
         set(value) {
             if (value != field) {
-                field = value
-                view.requestRender()
+                view.queueEvent {
+                    // value writes/updates should happen on GL thread
+                    field = value
+                    val bitmap = image.asBitmap()
+                    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[0])
+                    GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
+                    bitmap.recycle()
+                    view.requestRender()
+                }
             }
         }
 
@@ -84,7 +87,7 @@ class AppGLRenderer(
           gl_FragColor = texture2D(uTexture, vTexPosition); 
         }
     """.trimIndent()
-
+    // must be init only inside current GL context
     private val vertexShader by lazy { loadShader(GLES31.GL_VERTEX_SHADER, vertexShaderCode) }
     private val fragmentShader by lazy { loadShader(GLES31.GL_FRAGMENT_SHADER, fragmentShaderCode) }
     private val program by lazy {
@@ -99,20 +102,31 @@ class AppGLRenderer(
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         view.renderMode = RENDERMODE_WHEN_DIRTY
-        println("create surface")
     }
 
     override fun onDrawFrame(unused: GL10) {
-        draw(textures[0])
+        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0)
+        GLES31.glUseProgram(program)
+        GLES31.glDisable(GLES31.GL_BLEND)
+        val positionHandle = GLES31.glGetAttribLocation(program, "aPosition")
+        val textureHandle = GLES31.glGetUniformLocation(program, "uTexture")
+        val texturePositionHandle = GLES31.glGetAttribLocation(program, "aTexPosition")
+        GLES31.glVertexAttribPointer(texturePositionHandle, 2, GLES31.GL_FLOAT, false, 0, textureBuffer)
+        GLES31.glEnableVertexAttribArray(texturePositionHandle)
+        GLES31.glActiveTexture(GLES31.GL_TEXTURE0)
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[0])
+        GLES31.glUniform1i(textureHandle, 0)
+        GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesBuffer)
+        GLES31.glEnableVertexAttribArray(positionHandle)
+        GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
+        GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4)
     }
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
-        println("Image ${image}")
         GLES31.glViewport(0, 0, width, height)
         GLES31.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
 
-        val bitmap = (context.contentResolver.openInputStream(image) ?: error("can't open input stream for $image"))
-            .use { stream -> BitmapFactory.decodeStream(stream) }
+        val bitmap = image.asBitmap()
 
         GLES31.glGenTextures(1, textures, 0)
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textures[0])
@@ -125,23 +139,9 @@ class AppGLRenderer(
         bitmap.recycle()
     }
 
-    private fun draw(texture: Int) {
-        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0)
-        GLES31.glUseProgram(program)
-        GLES31.glDisable(GLES31.GL_BLEND)
-        val positionHandle = GLES31.glGetAttribLocation(program, "aPosition")
-        val textureHandle = GLES31.glGetUniformLocation(program, "uTexture")
-        val texturePositionHandle = GLES31.glGetAttribLocation(program, "aTexPosition")
-        GLES31.glVertexAttribPointer(texturePositionHandle, 2, GLES31.GL_FLOAT, false, 0, textureBuffer)
-        GLES31.glEnableVertexAttribArray(texturePositionHandle)
-        GLES31.glActiveTexture(GLES31.GL_TEXTURE0)
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-        GLES31.glUniform1i(textureHandle, 0)
-        GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesBuffer)
-        GLES31.glEnableVertexAttribArray(positionHandle)
-        GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
-        GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4)
-    }
+    private fun Uri.asBitmap() =
+        (context.contentResolver.openInputStream(this) ?: error("can't open input stream for $this"))
+            .use { stream -> BitmapFactory.decodeStream(stream) }
 
 }
 
