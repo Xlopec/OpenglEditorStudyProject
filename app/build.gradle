@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace "com.epam.opengl.edu"
+    namespace "io.github.xlopec.opengl.edu"
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.epam.opengl.edu"
+        applicationId "io.github.xlopec.opengl.edu"
         minSdk 23
         targetSdk 33
         versionCode 1
