@@ -6,7 +6,7 @@ import com.epam.opengl.edu.R
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
 
-class NoTransformation(
+class MatrixTransformation(
     private val context: Context,
     private val verticesCoordinates: FloatBuffer,
     private val textureCoordinates: FloatBuffer,
@@ -20,10 +20,10 @@ class NoTransformation(
     context (GL)
     fun render(
         vPMatrix: FloatArray,
-        fbo: Int,
-        texture: Int,
+        targetFbo: Int,
+        sourceTexture: Int,
     ) {
-        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, fbo)
+        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, targetFbo)
         GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
         GLES31.glUseProgram(program)
         val vPMatrixHandle = GLES31.glGetUniformLocation(program, "uMVPMatrix")
@@ -32,7 +32,7 @@ class NoTransformation(
         val texturePositionHandle = GLES31.glGetAttribLocation(program, "aTexPosition")
         GLES31.glVertexAttribPointer(texturePositionHandle, 2, GLES31.GL_FLOAT, false, 0, textureCoordinates)
         GLES31.glEnableVertexAttribArray(texturePositionHandle)
-        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
+        GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, sourceTexture)
         GLES31.glUniform1i(textureHandle, 0)
         GLES31.glUniformMatrix4fv(vPMatrixHandle, 1, false, vPMatrix, 0)
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
