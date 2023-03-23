@@ -18,8 +18,6 @@ class TintTransformation(
         context.loadProgram(R.raw.no_transform_vertex, R.raw.frag_tint)
     }
 
-    private val colorVector = floatArrayOf(0f, 0f, 0f, 0f)
-
     context (GL)
     fun render(
         tint: Tint,
@@ -35,15 +33,7 @@ class TintTransformation(
         GLES31.glVertexAttribPointer(texturePositionHandle, 2, GLES31.GL_FLOAT, false, 0, textureCoordinates)
         GLES31.glEnableVertexAttribArray(texturePositionHandle)
         GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
-
-        val (r, g, b, a) = tint.color
-
-        colorVector[0] = r
-        colorVector[1] = g
-        colorVector[2] = b
-        colorVector[3] = a
-
-        GLES31.glUniform4fv(tintHandle, 1, colorVector, 0)
+        GLES31.glUniform1f(tintHandle, tint.value)
         GLES31.glVertexAttribPointer(positionHandle, 2, GLES31.GL_FLOAT, false, 0, verticesCoordinates)
         GLES31.glEnableVertexAttribArray(positionHandle)
         GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4)
