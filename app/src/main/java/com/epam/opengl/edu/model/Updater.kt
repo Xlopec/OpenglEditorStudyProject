@@ -11,4 +11,5 @@ fun update(
         is OnSwitchedToEditTransformation -> state.withEditMenu { switchToEditTransformationMode(message.which) }
         OnApplyChanges -> state.withEditMenu { applyEditedTransformation() }
         OnDiscardChanges -> state.withEditMenu { discardEditedTransformation() }
+        OnUndoTransformation -> state.withEditMenu { undoLastTransformation() }
     }
