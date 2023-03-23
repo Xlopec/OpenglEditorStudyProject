@@ -28,48 +28,12 @@ val EditMenu.displayTransformations: Transformations
         is EditTransformation -> state.edited
     }
 
-fun EditMenu.updateGrayscale(
-    value: Float,
+fun EditMenu.updateTransformation(
+    transformation: Transformation,
 ) = copy(
     state = EditTransformation(
-        which = Grayscale::class,
-        edited = current + value.toGrayscale(),
-    )
-)
-
-fun EditMenu.updateBrightness(
-    value: Float,
-) = copy(
-    state = EditTransformation(
-        which = Brightness::class,
-        edited = current + value.toBrightness(),
-    )
-)
-
-fun EditMenu.updateSaturation(
-    value: Float,
-) = copy(
-    state = EditTransformation(
-        which = Saturation::class,
-        edited = current + value.toSaturation(),
-    )
-)
-
-fun EditMenu.updateContrast(
-    value: Float,
-) = copy(
-    state = EditTransformation(
-        which = Contrast::class,
-        edited = current + value.toContrast(),
-    )
-)
-
-fun EditMenu.updateTint(
-    value: Float,
-) = copy(
-    state = EditTransformation(
-        which = Tint::class,
-        edited = current + Tint(value),
+        which = transformation::class,
+        edited = current + transformation,
     )
 )
 

@@ -7,4 +7,13 @@
     <string name="message_adjust_saturation">Saturation</string>
     <string name="message_adjust_contrast">Contrast</string>
     <string name="message_adjust_tint">Tint</string>
+    <string name="message_adjust_radius">Radius - %d</string>
+    <string name="message_adjust_sigma">Sigma - %d</string>
+    <string name="message_adjust_blur">Blur</string>
+    <string name="menu_item_grayscale">Grayscale</string>
+    <string name="menu_item_contrast">Contrast</string>
+    <string name="menu_item_saturation">Saturation</string>
+    <string name="menu_item_brightness">Brightness</string>
+    <string name="menu_item_tint">Tint</string>
+    <string name="menu_item_blur">Blur</string>
 </resources>
