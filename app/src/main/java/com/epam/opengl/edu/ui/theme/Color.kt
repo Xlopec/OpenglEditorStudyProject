@@ -1,12 +1,18 @@
 package com.epam.opengl.edu.ui.theme
 
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+
+val MaterialTheme.navigationBar: Color
+    @Composable
+    get() = if (colors.isLight) Color.White else Color(28, 28, 29)
 
 val DarkThemeColors = darkColors(
     primary = Color.White,
-    secondary = Color(0xFFFFFFFF),
+    secondary = Color(4, 4, 6),
     background = Color.Black,
     surface = Color(4, 4, 6),
     error = Color(0xFFF70040),

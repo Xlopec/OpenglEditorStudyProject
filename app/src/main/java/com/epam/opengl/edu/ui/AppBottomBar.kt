@@ -3,9 +3,7 @@ package com.epam.opengl.edu.ui
 import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -33,6 +31,8 @@ import com.epam.opengl.edu.model.transformation.Scene
 import com.epam.opengl.edu.model.transformation.Tint
 import com.epam.opengl.edu.model.transformation.Transformations
 import com.epam.opengl.edu.ui.theme.AppTheme
+
+private val MenuItemHorizontalSpacing = 10.dp
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -121,7 +121,6 @@ private fun EditTransformationMenu(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun EditMenuDisplayed(
     handler: MessageHandler,
@@ -129,13 +128,9 @@ private fun EditMenuDisplayed(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .scrollable(
-                state = rememberScrollState(),
-                orientation = Orientation.Horizontal,
-                overscrollEffect = null
-            ),
-        horizontalArrangement = Arrangement.SpaceEvenly
+            .horizontalScroll(rememberScrollState())
+            .padding(vertical = 4.dp, horizontal = MenuItemHorizontalSpacing),
+        horizontalArrangement = Arrangement.spacedBy(MenuItemHorizontalSpacing)
     ) {
         IconButton(
             image = Icons.Filled.FilterBAndW,

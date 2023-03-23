@@ -8,12 +8,9 @@ import android.opengl.*
 import android.opengl.GLSurfaceView.RENDERMODE_WHEN_DIRTY
 import android.view.MotionEvent
 import android.view.View
+import androidx.compose.ui.graphics.Color
 import com.epam.opengl.edu.model.*
-import com.epam.opengl.edu.model.geometry.Size
-import com.epam.opengl.edu.model.geometry.height
-import com.epam.opengl.edu.model.geometry.width
-import com.epam.opengl.edu.model.geometry.x
-import com.epam.opengl.edu.model.geometry.y
+import com.epam.opengl.edu.model.geometry.*
 import com.epam.opengl.edu.model.transformation.ratio
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -56,6 +53,8 @@ class AppGLRenderer(
                 view.requestRender()
             }
         }
+
+    var backgroundColor: Color = Color.White
 
     private val verticesBuffer = floatBufferOf(
         -1f, -1f,
@@ -136,7 +135,12 @@ class AppGLRenderer(
     override fun onDrawFrame(
         gl: GL10,
     ) = with(gl) {
-        GLES31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
+        GLES31.glClearColor(
+            backgroundColor.red,
+            backgroundColor.green,
+            backgroundColor.blue,
+            backgroundColor.alpha
+        )
         val state = editor
         val transformations = state.displayTransformations
         val scene = transformations.scene
