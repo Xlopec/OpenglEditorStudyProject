@@ -7,19 +7,19 @@ import com.epam.opengl.edu.model.geometry.Size
 @Stable
 @JvmInline
 value class AppState(
-    val editMenu: EditMenu? = null,
+    val editor: Editor? = null,
 )
 
-fun AppState.withEditMenu(
-    modify: EditMenu.() -> EditMenu,
-) = AppState(editMenu = requireNotNull(editMenu) { "Can't update app state, image wasn't loaded" }.run(modify))
+fun AppState.withEditor(
+    modify: Editor.() -> Editor,
+) = AppState(editor = requireNotNull(editor) { "Can't update app state, image wasn't loaded" }.run(modify))
 
 fun AppState.onImageOrViewportUpdated(
     image: Uri,
     imageSize: Size,
     windowSize: Size,
 ): AppState = AppState(
-    editMenu = editMenu.updateViewportAndImageOrCreate(
+    editor = editor.updateViewportAndImageOrCreate(
         newImage = image,
         newImageSize = imageSize,
         newWindowSize = windowSize

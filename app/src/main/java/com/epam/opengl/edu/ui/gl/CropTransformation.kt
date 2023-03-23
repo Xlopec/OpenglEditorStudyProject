@@ -23,7 +23,6 @@ class CropTransformation(
     private val context: Context,
     private val verticesCoordinates: FloatBuffer,
     private val textureCoordinates: FloatBuffer,
-    private val textures: Textures,
 ) {
 
     private companion object {
@@ -40,6 +39,7 @@ class CropTransformation(
         transformations: Transformations,
         fbo: Int,
         texture: Int,
+        textures: Textures,
     ) {
         val scene = transformations.scene
         render(fbo, scene) { cropRegionHandle, borderWidthHandle, _ ->
@@ -55,20 +55,7 @@ class CropTransformation(
             val croppedSize = imageSize - topLeft - bottomRight
             val buffer = readTextureToBuffer(topLeft, croppedSize)
 
-            for (txt in textures.array) {
-                GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, txt)
-                GLES31.glTexImage2D(
-                    GLES31.GL_TEXTURE_2D,
-                    0,
-                    GLES31.GL_RGBA,
-                    croppedSize.width,
-                    croppedSize.height,
-                    0,
-                    GLES31.GL_RGBA,
-                    GLES31.GL_UNSIGNED_BYTE,
-                    buffer
-                )
-            }
+            textures.updateTextures(buffer, croppedSize)
         }
     }
 

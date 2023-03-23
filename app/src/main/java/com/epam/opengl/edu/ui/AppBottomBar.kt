@@ -36,16 +36,16 @@ import com.epam.opengl.edu.ui.theme.AppTheme
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun EditMenu(
+fun AppBottomBar(
     modifier: Modifier = Modifier,
-    menu: EditMenu,
+    editor: Editor,
     handler: MessageHandler,
 ) {
     Surface(
         modifier = modifier,
         elevation = 4.dp
     ) {
-        val transition = updateTransition(targetState = menu.state, label = "Edit Menu Transition")
+        val transition = updateTransition(targetState = editor.state, label = "Edit Menu Transition")
 
         transition.AnimatedContent(
             contentKey = { state -> state::class },
@@ -411,8 +411,8 @@ private fun IconButton(
 @Composable
 private fun EditMenuDisplayedPreview() {
     AppTheme {
-        EditMenu(
-            menu = EditMenu(
+        AppBottomBar(
+            editor = Editor(
                 current = Transformations(
                     Scene(
                         imageSize = Size(10, 10),
@@ -450,8 +450,8 @@ private fun EditBlurTransformationPreview() {
 @Composable
 private fun EditMenuEditTransformationPreview() {
     AppTheme {
-        EditMenu(
-            menu = EditMenu(
+        AppBottomBar(
+            editor = Editor(
                 image = Uri.EMPTY,
                 current = Transformations(
                     Scene(

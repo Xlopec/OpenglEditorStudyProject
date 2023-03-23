@@ -9,16 +9,19 @@ fun update(
     state: AppState,
 ): Update<AppState, Command> =
     when (message) {
-        is OnEditorMenuToggled -> state.withEditMenu { toggleState() }.noCommand()
+        is OnEditorMenuToggled -> state.withEditor { toggleState() }.noCommand()
         is OnDataPrepared -> state.onImageOrViewportUpdated(message.image, message.imageSize, message.windowSize)
             .noCommand()
-        is OnTransformationUpdated -> state.withEditMenu { updateTransformation(message.transformation) }.noCommand()
-        is OnSwitchedToEditTransformation -> state.withEditMenu { switchToEditTransformationMode(message.which) }
+        is OnTransformationUpdated -> state.withEditor { updateTransformation(message.transformation) }.noCommand()
+        is OnSwitchedToEditTransformation -> state.withEditor { switchToEditTransformationMode(message.which) }
             .noCommand()
-        OnApplyChanges -> state.withEditMenu { applyEditedTransformation() }
-            .command(setOfNotNull((state.editMenu!!.state as? EditTransformation)?.which?.let(::TransformationApplied)))
+        OnApplyChanges -> state.withEditor { applyEditedTransformation() }
+            .command(setOfNotNull((state.editor!!.state as? EditTransformation)?.which?.let(::NotifyTransformationApplied)))
 
-        OnDiscardChanges -> state.withEditMenu { discardEditedTransformation() }.noCommand()
-        OnUndoTransformation -> state.withEditMenu { undoLastTransformation() }.noCommand()
-        OnCropped -> state.withEditMenu { updateCropped() }.noCommand()
+        OnDiscardChanges -> state.withEditor { discardEditedTransformation() }.noCommand()
+        OnUndoTransformation -> state.withEditor { undoLastTransformation() }.noCommand()
+        OnCropped -> state.withEditor { updateCropped() }.noCommand()
+        OnExportImage -> state.withEditor { onImageExportStart() } command DoExportImage(DefaultExportFileName)
+        is OnImageExported -> state.withEditor { onImageExportedFinished() } command NotifyImageExported(DefaultExportFileName, message.path)
+        is OnImageExportException -> state.withEditor { onImageExportedFinished() } command NotifyException(message.th)
     }

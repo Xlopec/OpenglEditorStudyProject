@@ -16,15 +16,17 @@ import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+const val MimeTypePng = "image/png"
+
 suspend fun Context.saveBitmap(
     bitmap: Bitmap,
     filename: String,
     format: Bitmap.CompressFormat,
-    @IntRange(from = 0L, to = 100L) quality: Int,
     mimeType: String,
-) {
+    @IntRange(from = 0L, to = 100L) quality: Int = 100,
+): Uri {
     require(quality in 0..100) { "invalid quality $quality" }
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+    return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
         saveBitmapOnPreQ(bitmap, filename, format, quality)
     } else {
         saveBitmapOnQ(bitmap, format, quality, mimeType, filename)
@@ -36,7 +38,7 @@ private suspend fun saveBitmapOnPreQ(
     filename: String,
     format: Bitmap.CompressFormat,
     @IntRange(from = 0L, to = 100L) quality: Int,
-) = withContext(Dispatchers.IO) {
+): Uri = withContext(Dispatchers.IO) {
     val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), filename)
 
     try {
@@ -49,6 +51,8 @@ private suspend fun saveBitmapOnPreQ(
         file.delete()
         throw e
     }
+
+    Uri.fromFile(file)
 }
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -58,7 +62,7 @@ private suspend fun Context.saveBitmapOnQ(
     @IntRange(from = 0L, to = 100L) quality: Int,
     mimeType: String,
     displayName: String,
-) = withContext(Dispatchers.IO) {
+): Uri = withContext(Dispatchers.IO) {
     val values = ContentValues().apply {
         put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
         put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
@@ -84,4 +88,6 @@ private suspend fun Context.saveBitmapOnQ(
         }
         throw e
     }
+
+    uri
 }
