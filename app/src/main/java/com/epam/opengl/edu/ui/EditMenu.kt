@@ -2,16 +2,12 @@ package com.epam.opengl.edu.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,9 +19,6 @@ import androidx.compose.ui.unit.dp
 import com.epam.opengl.edu.R
 import com.epam.opengl.edu.model.*
 import com.epam.opengl.edu.ui.theme.AppTheme
-import com.github.skydoves.colorpicker.compose.AlphaSlider
-import com.github.skydoves.colorpicker.compose.HsvColorPicker
-import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -142,77 +135,15 @@ private fun EditTint(
     tint: Tint,
     handler: MessageHandler,
 ) {
-    Column(
+    EditValue(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        val controller = rememberColorPickerController()
-
-        LaunchedEffect(tint.color) {
-            controller.setWheelColor(tint.color.opaque)
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                AlphaSlider(
-                    modifier = Modifier.height(30.dp),
-                    controller = controller
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 50.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(25.dp)
-                            .background(tint.color, RoundedCornerShape(5.dp))
-                            .border(1.dp, Color.LightGray, RoundedCornerShape(5.dp))
-                    )
-
-                    Text(
-                        modifier = Modifier.weight(1f),
-                        text = "#" + tint.color.hexCode,
-                        style = MaterialTheme.typography.body2
-                    )
-
-                    if (tint.color != Tint.InitialColor) {
-                        IconButton(
-                            image = Icons.Filled.RestartAlt,
-                            tint = LocalContentColor.current.copy(alpha = 0.8f),
-                            onClick = { handler(OnTintUpdated(Tint.InitialColor)) }
-                        )
-                    }
-                }
-            }
-
-
-            HsvColorPicker(
-                modifier = Modifier.height(150.dp).weight(1f),
-                controller = controller,
-                onColorChanged = { envelope ->
-                    if (envelope.fromUser) {
-                        handler(OnTintUpdated(envelope.color))
-                    }
-                }
-            )
-        }
-
-        EditActions(
-            title = stringResource(R.string.message_adjust_tint),
-            onDiscardChanges = { handler(OnDiscardChanges) },
-            onApplyChanges = { handler(OnApplyChanges) }
-        )
-    }
+        title = stringResource(R.string.message_adjust_tint),
+        value = tint.value,
+        valueRange = -1f..1f,
+        onValueChange = { handler(OnTintUpdated(it)) },
+        onApplyChanges = { handler(OnApplyChanges) },
+        onDiscardChanges = { handler(OnDiscardChanges) },
+    )
 }
 
 @Composable
@@ -380,7 +311,7 @@ private fun EditTintTransformationPreview() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 4.dp),
-                tint = Tint(Color.Red),
+                tint = Tint(0f),
                 handler = {}
             )
         }
