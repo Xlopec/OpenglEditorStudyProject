@@ -11,7 +11,6 @@ import android.view.View
 import androidx.compose.ui.graphics.Color
 import io.github.xlopec.opengl.edu.model.*
 import io.github.xlopec.opengl.edu.model.geometry.*
-import io.github.xlopec.opengl.edu.model.transformation.subImage
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL
 import javax.microedition.khronos.opengles.GL10
@@ -79,7 +78,7 @@ class AppGLRenderer(
     @Volatile
     private var renderDelegate: GlRendererDelegate? = null
     private inline val renderDelegateOrThrow: GlRendererDelegate
-        get() = requireNotNull(renderDelegate) { "gl renderer gone" }
+        get() = requireNotNull(renderDelegate) { "gl renderer is gone" }
 
     override fun onSurfaceCreated(
         gl: GL10,
@@ -165,7 +164,7 @@ class AppGLRenderer(
         if (renderDelegate == null) {
             val scene = editor.displayTransformations.scene
             // restores crop state by reading subregion of the original image
-            val bitmap = with(context) { editor.image.asBitmap(scene.subImage) }
+            val bitmap = with(context) { editor.image.asBitmap(scene.viewport) }
             renderDelegate = GlRendererDelegate(context, bitmap, scene.windowSize)
             bitmap.recycle()
             view.renderMode = if (isDebugModeEnabled) RENDERMODE_CONTINUOUSLY else RENDERMODE_WHEN_DIRTY
