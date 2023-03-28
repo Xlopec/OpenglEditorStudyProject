@@ -2,10 +2,8 @@ package io.github.xlopec.opengl.edu.model
 
 import android.net.Uri
 import androidx.compose.runtime.Immutable
-import io.github.xlopec.opengl.edu.model.transformation.Transformation
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.reflect.KClass
 
 @Immutable
 sealed interface Command
@@ -29,11 +27,6 @@ data class NotifyImageExported(
 @JvmInline
 value class NotifyException(
     val th: Throwable,
-) : Command
-
-@JvmInline
-value class NotifyTransformationApplied(
-    val which: KClass<out Transformation>,
 ) : Command
 
 @JvmInline

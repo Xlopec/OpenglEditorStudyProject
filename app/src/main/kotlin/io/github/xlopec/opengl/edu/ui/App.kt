@@ -25,7 +25,6 @@ import io.github.xlopec.opengl.edu.MimeTypePng
 import io.github.xlopec.opengl.edu.R
 import io.github.xlopec.opengl.edu.model.*
 import io.github.xlopec.opengl.edu.model.geometry.Size
-import io.github.xlopec.opengl.edu.model.transformation.Scene
 import io.github.xlopec.opengl.edu.saveBitmap
 import io.github.xlopec.opengl.edu.ui.gl.GLView
 import io.github.xlopec.opengl.edu.ui.gl.decodeImageSize
@@ -147,15 +146,6 @@ fun App(
                         }
                     )
 
-                    val cropRequested = snapshot.commands.any { cmd -> cmd.cropRequested }
-
-                    if (cropRequested) {
-                        LaunchedEffect(Unit) {
-                            glState.crop()
-                            handler(OnCropped)
-                        }
-                    }
-
                     LaunchedEffect(editor) {
                         glState.editor = editor
                     }
@@ -232,6 +222,3 @@ private fun Modifier.animateRotationIfTrue(
         Modifier
     }
 }
-
-private val Command.cropRequested: Boolean
-    get() = this is NotifyTransformationApplied && which == Scene::class

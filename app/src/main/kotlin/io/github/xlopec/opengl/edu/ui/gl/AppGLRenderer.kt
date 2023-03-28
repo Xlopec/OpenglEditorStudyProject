@@ -38,10 +38,6 @@ class AppGLRenderer(
             field = value
 
             val imageChanged = old.image != value.image
-            val viewportChanged =
-                old.displayTransformations.scene.windowSize != value.displayTransformations.scene.windowSize
-            val transformationsChanged = value.displayTransformations != old.displayTransformations
-            val cropSelectionChanged = value.displayCropSelection != old.displayCropSelection
 
             if (imageChanged) {
                 view.queueEvent {
@@ -54,10 +50,12 @@ class AppGLRenderer(
                 }
             }
 
-            if (imageChanged || transformationsChanged || viewportChanged || cropSelectionChanged) {
+            if (imageChanged || old != value) {
                 view.requestRender()
             }
         }
+
+    private var oldEditor = editor
 
     @Volatile
     var backgroundColor: Color = Color.White
@@ -91,11 +89,22 @@ class AppGLRenderer(
         val isDebugEnabled = isDebugModeEnabled
         val delegate = renderDelegate ?: return@with
 
-        delegate.onDrawNormal(
-            backgroundColor = backgroundColor,
-            editor = editor,
-            isDebugModeEnabled = isDebugEnabled,
-        )
+        if (imageCropDetected(oldEditor, editor)) {
+            delegate.onDrawCropping(
+                backgroundColor = backgroundColor,
+                oldEditor = oldEditor,
+                newEditor = editor,
+                isDebugModeEnabled = isDebugEnabled,
+            )
+        } else {
+            delegate.onDrawNormal(
+                backgroundColor = backgroundColor,
+                editor = editor,
+                isDebugModeEnabled = isDebugEnabled,
+            )
+        }
+
+        oldEditor = editor
 
         if (isDebugEnabled) {
             fpsCounter.onFrame()
@@ -118,21 +127,6 @@ class AppGLRenderer(
                     isDebugModeEnabled = isDebugModeEnabled
                 )
                 continuation.resume(bitmap)
-            } catch (e: Exception) {
-                continuation.resumeWithException(e)
-            }
-        }
-    }
-
-    suspend fun crop() = suspendCoroutine { continuation ->
-        view.queueEvent {
-            try {
-                renderDelegateOrThrow.onCrop(
-                    backgroundColor = backgroundColor,
-                    editor = editor,
-                    isDebugModeEnabled = isDebugModeEnabled
-                )
-                continuation.resume(Unit)
             } catch (e: Exception) {
                 continuation.resumeWithException(e)
             }
@@ -172,3 +166,10 @@ class AppGLRenderer(
     }
 
 }
+
+private fun imageCropDetected(
+    oldEditor: Editor,
+    newEditor: Editor,
+): Boolean =
+    oldEditor.displayTransformations.scene.imageSize != newEditor.displayTransformations.scene.imageSize &&
+            oldEditor.image == newEditor.image

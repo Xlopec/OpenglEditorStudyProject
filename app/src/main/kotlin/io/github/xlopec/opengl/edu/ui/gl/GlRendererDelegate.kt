@@ -89,16 +89,24 @@ internal class GlRendererDelegate(
         return bitmap
     }
 
-    fun onCrop(
+    fun onDrawCropping(
         backgroundColor: Color,
-        editor: Editor,
+        oldEditor: Editor,
+        newEditor: Editor,
         isDebugModeEnabled: Boolean,
     ) {
         glClearColor(backgroundColor)
-        val transformations = editor.displayTransformations
+        val transformations = newEditor.displayTransformations
         val scene = transformations.scene
 
         GLES31.glViewport(0, 0, scene.windowSize.width, scene.windowSize.height)
+
+        with(oldEditor.displayTransformations.scene) {
+            val topLeft = leftTopImageOffset
+            val bottomRight = rightBottomImageOffset
+            val croppedSize = imageSize - topLeft - bottomRight
+            sourceFbo.resize(topLeft, croppedSize)
+        }
 
         val lastColorTransformTexture = drawColorTransformations(transformations)
         val cropFbo = transformationFbos[colorTransformations.size]
@@ -109,13 +117,6 @@ internal class GlRendererDelegate(
             sourceTexture = lastColorTransformTexture,
             isDebugEnabled = isDebugModeEnabled,
         )
-
-        with(scene) {
-            val topLeft = leftTopImageOffset
-            val bottomRight = rightBottomImageOffset
-            val croppedSize = imageSize - topLeft - bottomRight
-            sourceFbo.resize(topLeft, croppedSize)
-        }
 
         drawOnDisplay(scene, cropFbo.texture)
     }

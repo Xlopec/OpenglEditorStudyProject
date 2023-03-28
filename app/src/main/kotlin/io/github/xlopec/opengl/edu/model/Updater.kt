@@ -17,12 +17,9 @@ fun update(
         is OnSwitchedToEditTransformation -> state.withEditor { switchToEditTransformationMode(message.which) }
             .noCommand()
 
-        OnApplyChanges -> state.withEditor { applyEditedTransformation() }
-            .command(setOfNotNull((state.editor!!.state as? EditTransformation)?.which?.let(::NotifyTransformationApplied)))
-
+        OnApplyChanges -> state.withEditor { applyEditedTransformation() }.noCommand()
         OnDiscardChanges -> state.withEditor { discardEditedTransformation() }.noCommand()
         OnUndoTransformation -> state.withEditor { undoLastTransformation() }.noCommand()
-        OnCropped -> state.withEditor { updateCropped() }.noCommand()
         OnExportImage -> state.withEditor { onImageExportStart() } command DoExportImage()
         is OnImageExported -> state.withEditor { onImageExportedFinished() } command NotifyImageExported(message.filename, message.path)
         is OnImageExportException -> state.withEditor { onImageExportedFinished() } command NotifyException(message.th)

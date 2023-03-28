@@ -35,7 +35,6 @@ class GLViewState(
 
     suspend fun exportFrame() = view.exportFrame()
 
-    suspend fun crop() = view.crop()
 }
 
 @Composable

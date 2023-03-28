@@ -33,8 +33,6 @@ data class OnDataPrepared(
     val windowSize: Size,
 ) : Message
 
-object OnCropped : Message
-
 object OnExportImage : Message
 
 data class OnImageExported(

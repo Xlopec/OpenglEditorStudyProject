@@ -42,8 +42,6 @@ class AppGLSurfaceView(
 
     suspend fun exportFrame() = renderer.exportFrame()
 
-    suspend fun crop() = renderer.crop()
-
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         super.surfaceDestroyed(holder)
         renderer.onSurfaceDestroyed()
