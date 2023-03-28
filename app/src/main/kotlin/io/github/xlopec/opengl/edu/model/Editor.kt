@@ -108,7 +108,11 @@ fun Editor.applyEditedTransformation() = when (state) {
         state = Displayed,
         current = state.edited,
         // todo add support for reverting Scene transformations
-        previous = if (state.which == Scene::class) { previous } else { previous + current }
+        previous = if (state.which == Scene::class) {
+            previous
+        } else {
+            previous + current
+        }
     )
 }
 

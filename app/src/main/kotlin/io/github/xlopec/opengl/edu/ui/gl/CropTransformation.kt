@@ -3,8 +3,13 @@ package io.github.xlopec.opengl.edu.ui.gl
 import android.content.Context
 import android.opengl.GLES31
 import io.github.xlopec.opengl.edu.R
-import io.github.xlopec.opengl.edu.model.geometry.*
-import io.github.xlopec.opengl.edu.model.transformation.*
+import io.github.xlopec.opengl.edu.model.geometry.component1
+import io.github.xlopec.opengl.edu.model.geometry.component2
+import io.github.xlopec.opengl.edu.model.geometry.height
+import io.github.xlopec.opengl.edu.model.geometry.width
+import io.github.xlopec.opengl.edu.model.transformation.Scene
+import io.github.xlopec.opengl.edu.model.transformation.Transformations
+import io.github.xlopec.opengl.edu.model.transformation.toGlPoint
 import java.nio.FloatBuffer
 import javax.microedition.khronos.opengles.GL
 import kotlin.contracts.ExperimentalContracts
@@ -22,7 +27,7 @@ class CropTransformation(
     }
 
     context (GL)
-            private val program by lazy {
+    private val program by lazy {
         context.loadProgram(R.raw.no_transform_vertex, R.raw.frag_crop)
     }
 
@@ -91,8 +96,8 @@ class CropTransformation(
     }
 
     context (GL)
-            @OptIn(ExperimentalContracts::class)
-            private /*inline*/ fun render(
+    @OptIn(ExperimentalContracts::class)
+    private /*inline*/ fun render(
         frameBuffer: FrameBuffer,
         scene: Scene,
         isDebugEnabled: Boolean,

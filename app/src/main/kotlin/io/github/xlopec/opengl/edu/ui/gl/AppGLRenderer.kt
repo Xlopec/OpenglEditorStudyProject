@@ -160,7 +160,7 @@ class AppGLRenderer(
     }
 
     context (GL)
-            private fun initDelegateIfNeeded() {
+    private fun initDelegateIfNeeded() {
         if (renderDelegate == null) {
             val scene = editor.displayTransformations.scene
             // restores crop state by reading subregion of the original image

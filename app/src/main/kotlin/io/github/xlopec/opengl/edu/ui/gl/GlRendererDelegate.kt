@@ -8,17 +8,8 @@ import androidx.compose.ui.graphics.Color
 import io.github.xlopec.opengl.edu.model.Editor
 import io.github.xlopec.opengl.edu.model.displayCropSelection
 import io.github.xlopec.opengl.edu.model.displayTransformations
-import io.github.xlopec.opengl.edu.model.geometry.Size
-import io.github.xlopec.opengl.edu.model.geometry.height
-import io.github.xlopec.opengl.edu.model.geometry.minus
-import io.github.xlopec.opengl.edu.model.geometry.width
-import io.github.xlopec.opengl.edu.model.geometry.x
-import io.github.xlopec.opengl.edu.model.geometry.y
-import io.github.xlopec.opengl.edu.model.transformation.Scene
-import io.github.xlopec.opengl.edu.model.transformation.Transformations
-import io.github.xlopec.opengl.edu.model.transformation.leftTopImageOffset
-import io.github.xlopec.opengl.edu.model.transformation.ratio
-import io.github.xlopec.opengl.edu.model.transformation.rightBottomImageOffset
+import io.github.xlopec.opengl.edu.model.geometry.*
+import io.github.xlopec.opengl.edu.model.transformation.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -142,18 +133,17 @@ internal class GlRendererDelegate(
 
         val lastColorTransformTexture = drawColorTransformations(transformations)
         val cropFbo = transformationFbos[colorTransformations.size]
-        val cropFrameBuffer = cropFbo.frameBuffer
 
         if (editor.displayCropSelection) {
             cropTransformation.drawSelection(
                 transformations = transformations,
-                frameBuffer = cropFrameBuffer,
+                frameBuffer = cropFbo.frameBuffer,
                 texture = lastColorTransformTexture,
                 isDebugEnabled = isDebugModeEnabled,
             )
         } else {
             cropTransformation.drawNormal(
-                frameBuffer = cropFrameBuffer,
+                frameBuffer = cropFbo.frameBuffer,
                 texture = lastColorTransformTexture,
                 transformations = transformations,
                 isDebugEnabled = isDebugModeEnabled,
@@ -169,7 +159,7 @@ internal class GlRendererDelegate(
     // ....
     // texture[last modified texture + 1] -> matrix transformation -> screen
     context (GL)
-            private fun drawColorTransformations(
+    private fun drawColorTransformations(
         transformations: Transformations,
     ) = colorTransformations.fastFoldIndexed(sourceFbo.texture) { index, sourceTexture, transformation ->
         transformation.draw(
@@ -182,7 +172,7 @@ internal class GlRendererDelegate(
     }
 
     context (GL)
-            private fun drawOnDisplay(
+    private fun drawOnDisplay(
         scene: Scene,
         sourceTexture: Texture,
     ) = with(scene) {
@@ -214,14 +204,14 @@ internal class GlRendererDelegate(
 }
 
 context (GL)
-        private fun Iterable<Fbo>.resizeTextures(
+private fun Iterable<Fbo>.resizeTextures(
     size: Size,
 ) = forEach { fbo ->
     fbo.texture.size = size
 }
 
 context (GL)
-        private fun glClearColor(
+private fun glClearColor(
     color: Color,
 ) = GLES31.glClearColor(color.red, color.green, color.blue, color.alpha)
 

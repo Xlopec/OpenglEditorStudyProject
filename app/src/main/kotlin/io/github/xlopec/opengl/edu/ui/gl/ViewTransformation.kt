@@ -17,7 +17,7 @@ class ViewTransformation(
 ) {
 
     context (GL)
-            private val program by lazy {
+    private val program by lazy {
         context.loadProgram(R.raw.projection_vertex, R.raw.frag_normal)
     }
 

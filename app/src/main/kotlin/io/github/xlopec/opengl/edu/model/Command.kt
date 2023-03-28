@@ -23,12 +23,12 @@ value class DoExportImage(
 
 data class NotifyImageExported(
     val filename: String,
-    val path: Uri
+    val path: Uri,
 ) : Command
 
 @JvmInline
 value class NotifyException(
-    val th: Throwable
+    val th: Throwable,
 ) : Command
 
 @JvmInline
@@ -38,5 +38,5 @@ value class NotifyTransformationApplied(
 
 @JvmInline
 value class StoreDebugMode(
-    val isDebugModeEnabled: Boolean
+    val isDebugModeEnabled: Boolean,
 ) : Command

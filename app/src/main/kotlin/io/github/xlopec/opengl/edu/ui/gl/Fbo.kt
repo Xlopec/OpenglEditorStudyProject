@@ -3,13 +3,7 @@ package io.github.xlopec.opengl.edu.ui.gl
 import android.graphics.Bitmap
 import android.opengl.GLES31
 import android.opengl.GLUtils
-import io.github.xlopec.opengl.edu.model.geometry.Offset
-import io.github.xlopec.opengl.edu.model.geometry.Size
-import io.github.xlopec.opengl.edu.model.geometry.height
-import io.github.xlopec.opengl.edu.model.geometry.packInts
-import io.github.xlopec.opengl.edu.model.geometry.unpackInt1
-import io.github.xlopec.opengl.edu.model.geometry.unpackInt2
-import io.github.xlopec.opengl.edu.model.geometry.width
+import io.github.xlopec.opengl.edu.model.geometry.*
 import javax.microedition.khronos.opengles.GL
 
 @JvmInline
@@ -134,7 +128,7 @@ value class Fbo private constructor(
 }
 
 context (GL)
-        private fun createGlFrameBuffers(
+private fun createGlFrameBuffers(
     count: Int,
 ): IntArray {
     val fbo = IntArray(count)
@@ -143,7 +137,7 @@ context (GL)
 }
 
 context (GL)
-        private fun createGlTextures(
+private fun createGlTextures(
     count: Int,
 ): IntArray {
     val textures = IntArray(count)
@@ -152,7 +146,7 @@ context (GL)
 }
 
 context (GL)
-        private fun checkBufferIsComplete(
+private fun checkBufferIsComplete(
     frameBuffer: Int,
     texture: Int,
 ) = check(GLES31.glCheckFramebufferStatus(GLES31.GL_FRAMEBUFFER) == GLES31.GL_FRAMEBUFFER_COMPLETE) {

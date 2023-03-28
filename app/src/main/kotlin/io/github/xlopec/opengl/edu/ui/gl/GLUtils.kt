@@ -2,12 +2,7 @@ package io.github.xlopec.opengl.edu.ui.gl
 
 import android.graphics.Bitmap
 import android.opengl.GLES31
-import io.github.xlopec.opengl.edu.model.geometry.Offset
-import io.github.xlopec.opengl.edu.model.geometry.Size
-import io.github.xlopec.opengl.edu.model.geometry.height
-import io.github.xlopec.opengl.edu.model.geometry.width
-import io.github.xlopec.opengl.edu.model.geometry.x
-import io.github.xlopec.opengl.edu.model.geometry.y
+import io.github.xlopec.opengl.edu.model.geometry.*
 import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.nio.ByteOrder

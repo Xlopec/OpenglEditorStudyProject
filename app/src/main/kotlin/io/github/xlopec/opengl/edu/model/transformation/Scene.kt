@@ -137,11 +137,11 @@ fun Offset.toSceneOffset(): SceneOffset {
 }
 
 context (Scene)
-        @Suppress("NOTHING_TO_INLINE")
-        inline fun Point.toGlPoint(): GlPoint = GlPoint.fromPoint(this, imageSize)
+@Suppress("NOTHING_TO_INLINE")
+inline fun Point.toGlPoint(): GlPoint = GlPoint.fromPoint(this, imageSize)
 
 context (Scene)
-        private fun ScenePoint.toImagePoint(): Point {
+private fun ScenePoint.toImagePoint(): Point {
     return if (imageSize.isPortrait) {
         val viewport2WindowHeight = imageSize.height.toFloat() / windowSize.height
         // how many times image was stretched to fit the window height

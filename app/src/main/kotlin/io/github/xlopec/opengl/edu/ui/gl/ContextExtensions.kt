@@ -11,10 +11,10 @@ import io.github.xlopec.opengl.edu.model.geometry.Rect
 import io.github.xlopec.opengl.edu.model.geometry.Size
 import io.github.xlopec.opengl.edu.model.geometry.x
 import io.github.xlopec.opengl.edu.model.geometry.y
-import java.io.InputStream
-import java.io.Reader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.InputStream
+import java.io.Reader
 
 context (Context)
 fun Uri.asBitmap(
@@ -41,7 +41,7 @@ fun Uri.asBitmap(
 }
 
 context (Context)
-        suspend fun Uri.decodeImageSize(): Size = withContext(Dispatchers.IO) {
+suspend fun Uri.decodeImageSize(): Size = withContext(Dispatchers.IO) {
     val options = BitmapFactory.Options()
         .apply { inJustDecodeBounds = true }
         .also { options -> inputStream { stream -> BitmapFactory.decodeStream(stream, null, options) } }
@@ -87,6 +87,6 @@ fun Context.loadProgram(
 }
 
 context (Context)
-        private inline fun <T> Uri.inputStream(
+private inline fun <T> Uri.inputStream(
     crossinline mapper: (InputStream) -> T,
 ): T = (contentResolver.openInputStream(this@inputStream) ?: error("can't open input stream for $this")).use(mapper)

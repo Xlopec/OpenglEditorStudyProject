@@ -15,7 +15,7 @@ class AppGLSurfaceView(
     editor: Editor,
     onViewportUpdated: (Size) -> Unit,
     onFpsUpdated: (UInt) -> Unit,
-    attrs: AttributeSet? = null
+    attrs: AttributeSet? = null,
 ) : GLSurfaceView(context, attrs) {
 
     private val renderer = AppGLRenderer(

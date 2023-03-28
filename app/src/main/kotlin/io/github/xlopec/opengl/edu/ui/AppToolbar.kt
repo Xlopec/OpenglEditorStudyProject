@@ -2,23 +2,9 @@ package io.github.xlopec.opengl.edu.ui
 
 import android.content.Context
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material.Badge
-import androidx.compose.material.BadgedBox
-import androidx.compose.material.DrawerState
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
-import androidx.compose.material.contentColorFor
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoFixNormal
-import androidx.compose.material.icons.filled.AutoFixOff
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Undo
-import androidx.compose.material.icons.filled.UploadFile
-import androidx.compose.material.primarySurface
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -27,12 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.xlopec.opengl.edu.R
-import io.github.xlopec.opengl.edu.model.Editor
-import io.github.xlopec.opengl.edu.model.OnEditorMenuToggled
-import io.github.xlopec.opengl.edu.model.OnExportImage
-import io.github.xlopec.opengl.edu.model.OnUndoTransformation
-import io.github.xlopec.opengl.edu.model.canUndoTransformations
-import io.github.xlopec.opengl.edu.model.isDisplayed
+import io.github.xlopec.opengl.edu.model.*
 import kotlinx.coroutines.launch
 
 private const val MaxDisplayUndoOperations = 10
