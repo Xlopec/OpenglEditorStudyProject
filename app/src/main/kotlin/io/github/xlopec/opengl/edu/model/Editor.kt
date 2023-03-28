@@ -4,14 +4,8 @@ import android.net.Uri
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import io.github.xlopec.opengl.edu.model.geometry.Size
-import io.github.xlopec.opengl.edu.model.transformation.Scene
-import io.github.xlopec.opengl.edu.model.transformation.Transformation
-import io.github.xlopec.opengl.edu.model.transformation.Transformations
-import io.github.xlopec.opengl.edu.model.transformation.onCropped
-import io.github.xlopec.opengl.edu.model.transformation.plus
+import io.github.xlopec.opengl.edu.model.transformation.*
 import kotlin.reflect.KClass
-
-const val DefaultExportFileName = "output.png"
 
 @Stable
 data class Editor(
