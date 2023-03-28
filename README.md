@@ -27,8 +27,6 @@ developers who are learning OpenGL basics, just like I do.
 
 ## TODO Features
 
-- Improve overall rendering performance by employing viewport size rather than original image size when rendering
-
 ## Known Issues
 
 - Image disappears after putting the app to background on some devices (at least on Meizu). Have no ideas yet on how to fix it. Looks like
