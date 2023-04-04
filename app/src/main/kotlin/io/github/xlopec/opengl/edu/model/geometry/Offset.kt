@@ -29,3 +29,5 @@ inline val Offset.y: Int
 operator fun Offset.component1(): Int = x
 
 operator fun Offset.component2(): Int = y
+
+fun Offset.toPoint() = Point(x, y)

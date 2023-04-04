@@ -11,7 +11,7 @@ data class AppState(
 )
 
 fun AppState.onDebugModeUpdated(
-    isDebugModeEnabled: Boolean
+    isDebugModeEnabled: Boolean,
 ) = copy(isDebugModeEnabled = isDebugModeEnabled)
 
 fun AppState.withEditor(

@@ -19,13 +19,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.xlopec.opengl.edu.R
 import io.github.xlopec.opengl.edu.model.*
-import io.github.xlopec.opengl.edu.model.transformation.Brightness
+import io.github.xlopec.opengl.edu.model.transformation.*
 import io.github.xlopec.opengl.edu.model.transformation.Contrast
-import io.github.xlopec.opengl.edu.model.transformation.GaussianBlur
-import io.github.xlopec.opengl.edu.model.transformation.Grayscale
-import io.github.xlopec.opengl.edu.model.transformation.Saturation
-import io.github.xlopec.opengl.edu.model.transformation.Scene
-import io.github.xlopec.opengl.edu.model.transformation.Tint
 
 private val MenuItemHorizontalSpacing = 10.dp
 

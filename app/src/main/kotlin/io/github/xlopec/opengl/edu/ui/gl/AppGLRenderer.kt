@@ -11,7 +11,6 @@ import android.view.View
 import androidx.compose.ui.graphics.Color
 import io.github.xlopec.opengl.edu.model.*
 import io.github.xlopec.opengl.edu.model.geometry.*
-import io.github.xlopec.opengl.edu.model.transformation.subImage
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL
 import javax.microedition.khronos.opengles.GL10
@@ -39,10 +38,6 @@ class AppGLRenderer(
             field = value
 
             val imageChanged = old.image != value.image
-            val viewportChanged =
-                old.displayTransformations.scene.windowSize != value.displayTransformations.scene.windowSize
-            val transformationsChanged = value.displayTransformations != old.displayTransformations
-            val cropSelectionChanged = value.displayCropSelection != old.displayCropSelection
 
             if (imageChanged) {
                 view.queueEvent {
@@ -55,10 +50,12 @@ class AppGLRenderer(
                 }
             }
 
-            if (imageChanged || transformationsChanged || viewportChanged || cropSelectionChanged) {
+            if (imageChanged || old != value) {
                 view.requestRender()
             }
         }
+
+    private var oldEditor = editor
 
     @Volatile
     var backgroundColor: Color = Color.White
@@ -79,7 +76,7 @@ class AppGLRenderer(
     @Volatile
     private var renderDelegate: GlRendererDelegate? = null
     private inline val renderDelegateOrThrow: GlRendererDelegate
-        get() = requireNotNull(renderDelegate) { "gl renderer gone" }
+        get() = requireNotNull(renderDelegate) { "gl renderer is gone" }
 
     override fun onSurfaceCreated(
         gl: GL10,
@@ -92,11 +89,22 @@ class AppGLRenderer(
         val isDebugEnabled = isDebugModeEnabled
         val delegate = renderDelegate ?: return@with
 
-        delegate.onDrawNormal(
-            backgroundColor = backgroundColor,
-            editor = editor,
-            isDebugModeEnabled = isDebugEnabled,
-        )
+        if (imageCropDetected(oldEditor, editor)) {
+            delegate.onDrawCropping(
+                backgroundColor = backgroundColor,
+                oldEditor = oldEditor,
+                newEditor = editor,
+                isDebugModeEnabled = isDebugEnabled,
+            )
+        } else {
+            delegate.onDrawNormal(
+                backgroundColor = backgroundColor,
+                editor = editor,
+                isDebugModeEnabled = isDebugEnabled,
+            )
+        }
+
+        oldEditor = editor
 
         if (isDebugEnabled) {
             fpsCounter.onFrame()
@@ -125,21 +133,6 @@ class AppGLRenderer(
         }
     }
 
-    suspend fun crop() = suspendCoroutine { continuation ->
-        view.queueEvent {
-            try {
-                renderDelegateOrThrow.onCrop(
-                    backgroundColor = backgroundColor,
-                    editor = editor,
-                    isDebugModeEnabled = isDebugModeEnabled
-                )
-                continuation.resume(Unit)
-            } catch (e: Exception) {
-                continuation.resumeWithException(e)
-            }
-        }
-    }
-
     override fun onSurfaceChanged(
         gl: GL10,
         width: Int,
@@ -161,11 +154,11 @@ class AppGLRenderer(
     }
 
     context (GL)
-            private fun initDelegateIfNeeded() {
+    private fun initDelegateIfNeeded() {
         if (renderDelegate == null) {
             val scene = editor.displayTransformations.scene
             // restores crop state by reading subregion of the original image
-            val bitmap = with(context) { editor.image.asBitmap(scene.subImage) }
+            val bitmap = with(context) { editor.image.asBitmap(scene.viewport) }
             renderDelegate = GlRendererDelegate(context, bitmap, scene.windowSize)
             bitmap.recycle()
             view.renderMode = if (isDebugModeEnabled) RENDERMODE_CONTINUOUSLY else RENDERMODE_WHEN_DIRTY
@@ -173,3 +166,10 @@ class AppGLRenderer(
     }
 
 }
+
+private fun imageCropDetected(
+    oldEditor: Editor,
+    newEditor: Editor,
+): Boolean =
+    oldEditor.displayTransformations.scene.imageSize != newEditor.displayTransformations.scene.imageSize &&
+            oldEditor.image == newEditor.image

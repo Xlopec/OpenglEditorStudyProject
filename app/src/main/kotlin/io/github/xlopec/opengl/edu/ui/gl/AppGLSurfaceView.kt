@@ -15,7 +15,7 @@ class AppGLSurfaceView(
     editor: Editor,
     onViewportUpdated: (Size) -> Unit,
     onFpsUpdated: (UInt) -> Unit,
-    attrs: AttributeSet? = null
+    attrs: AttributeSet? = null,
 ) : GLSurfaceView(context, attrs) {
 
     private val renderer = AppGLRenderer(
@@ -41,8 +41,6 @@ class AppGLSurfaceView(
     var backgroundColor by renderer::backgroundColor
 
     suspend fun exportFrame() = renderer.exportFrame()
-
-    suspend fun crop() = renderer.crop()
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         super.surfaceDestroyed(holder)

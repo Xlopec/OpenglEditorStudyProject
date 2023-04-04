@@ -33,13 +33,11 @@ data class OnDataPrepared(
     val windowSize: Size,
 ) : Message
 
-object OnCropped : Message
-
 object OnExportImage : Message
 
-@JvmInline
-value class OnImageExported(
+data class OnImageExported(
     val path: Uri,
+    val filename: String,
 ) : Message
 
 @JvmInline
@@ -49,5 +47,5 @@ value class OnImageExportException(
 
 @JvmInline
 value class OnDebugModeChanged(
-    val isDebugModeEnabled: Boolean
+    val isDebugModeEnabled: Boolean,
 ) : Message

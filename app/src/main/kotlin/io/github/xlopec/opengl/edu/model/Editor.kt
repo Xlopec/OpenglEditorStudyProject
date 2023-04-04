@@ -4,14 +4,8 @@ import android.net.Uri
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import io.github.xlopec.opengl.edu.model.geometry.Size
-import io.github.xlopec.opengl.edu.model.transformation.Scene
-import io.github.xlopec.opengl.edu.model.transformation.Transformation
-import io.github.xlopec.opengl.edu.model.transformation.Transformations
-import io.github.xlopec.opengl.edu.model.transformation.onCropped
-import io.github.xlopec.opengl.edu.model.transformation.plus
+import io.github.xlopec.opengl.edu.model.transformation.*
 import kotlin.reflect.KClass
-
-const val DefaultExportFileName = "output.png"
 
 @Stable
 data class Editor(
@@ -112,9 +106,18 @@ fun Editor.applyEditedTransformation() = when (state) {
     Displayed, Hidden -> this
     is EditTransformation -> copy(
         state = Displayed,
-        current = state.edited,
+        // todo maybe Scene shouldn't be transformation?
+        current = if (state.which == Scene::class) {
+            state.edited.copy(scene = state.edited.scene.onCropped())
+        } else {
+            state.edited
+        },
         // todo add support for reverting Scene transformations
-        previous = if (state.which == Scene::class) { previous } else { previous + current }
+        previous = if (state.which == Scene::class) {
+            previous
+        } else {
+            previous + current
+        }
     )
 }
 

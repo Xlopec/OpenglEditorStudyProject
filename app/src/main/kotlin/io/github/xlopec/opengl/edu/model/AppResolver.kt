@@ -23,7 +23,6 @@ fun AppResolver(): AppResolver<Environment> = object : AppResolver<Environment> 
                 is DoExportImage -> Unit
                 is NotifyException -> Unit
                 is NotifyImageExported -> Unit
-                is NotifyTransformationApplied -> Unit
                 is StoreDebugMode -> {
                     value.isDebugModeEnabled = command.isDebugModeEnabled
                 }

@@ -1,29 +1,7 @@
 package io.github.xlopec.opengl.edu.model.transformation
 
 import android.view.MotionEvent
-import io.github.xlopec.opengl.edu.model.geometry.GlPoint
-import io.github.xlopec.opengl.edu.model.geometry.Offset
-import io.github.xlopec.opengl.edu.model.geometry.Point
-import io.github.xlopec.opengl.edu.model.geometry.Rect
-import io.github.xlopec.opengl.edu.model.geometry.SceneOffset
-import io.github.xlopec.opengl.edu.model.geometry.ScenePoint
-import io.github.xlopec.opengl.edu.model.geometry.Size
-import io.github.xlopec.opengl.edu.model.geometry.height
-import io.github.xlopec.opengl.edu.model.geometry.isOnBottomEdgeOf
-import io.github.xlopec.opengl.edu.model.geometry.isOnLeftEdgeOf
-import io.github.xlopec.opengl.edu.model.geometry.isOnRightEdgeOf
-import io.github.xlopec.opengl.edu.model.geometry.isOnTopEdgeOf
-import io.github.xlopec.opengl.edu.model.geometry.minus
-import io.github.xlopec.opengl.edu.model.geometry.moveBottomEdgeWithinBounds
-import io.github.xlopec.opengl.edu.model.geometry.moveLeftEdgeWithinBounds
-import io.github.xlopec.opengl.edu.model.geometry.moveRightEdgeWithinBounds
-import io.github.xlopec.opengl.edu.model.geometry.moveTopEdgeWithinBounds
-import io.github.xlopec.opengl.edu.model.geometry.offsetByWithinBounds
-import io.github.xlopec.opengl.edu.model.geometry.plus
-import io.github.xlopec.opengl.edu.model.geometry.size
-import io.github.xlopec.opengl.edu.model.geometry.width
-import io.github.xlopec.opengl.edu.model.geometry.x
-import io.github.xlopec.opengl.edu.model.geometry.y
+import io.github.xlopec.opengl.edu.model.geometry.*
 import kotlin.math.roundToInt
 
 /**
@@ -38,15 +16,20 @@ class Scene(
      * Current window size
      */
     val windowSize: Size,
-    // todo refactor
-    val accumulatedLeftTopImageOffset: Offset = Offset(0, 0),
-    val accumulatedBottomRightImageOffset: Offset = Offset(0, 0),
-    val originalImageSize: Size = imageSize,
+    /**
+     * Current visible image viewport in terms of original image. Can't exceed size of the original image.
+     */
+    val viewport: Rect = Rect(Point(0, 0), Point(imageSize.width, imageSize.height)),
 ) : Transformation {
 
     companion object {
         const val TolerancePx = 30
         const val MinSize = TolerancePx * 3
+    }
+
+    init {
+        require(viewport.size.width <= imageSize.width)
+        require(viewport.size.height <= imageSize.height)
     }
 
     /**
@@ -134,9 +117,10 @@ class Scene(
 fun Scene.onCropped(): Scene = Scene(
     imageSize = selection.size,
     windowSize = windowSize,
-    accumulatedLeftTopImageOffset = accumulatedLeftTopImageOffset + leftTopImageOffset,
-    accumulatedBottomRightImageOffset = accumulatedBottomRightImageOffset + rightBottomImageOffset,
-    originalImageSize = originalImageSize
+    viewport = Rect(
+        topLeft = viewport.topLeft + leftTopImageOffset.toPoint(),
+        bottomRight = viewport.bottomRight - rightBottomImageOffset.toPoint()
+    ),
 )
 
 val Scene.leftTopImageOffset: Offset
@@ -144,15 +128,6 @@ val Scene.leftTopImageOffset: Offset
 
 val Scene.rightBottomImageOffset: Offset
     get() = Offset(imageSize.width - selection.bottomRight.x, imageSize.height - selection.bottomRight.y)
-
-val Scene.subImage: Rect
-    get() = Rect(
-        topLeft = Point(accumulatedLeftTopImageOffset.x, accumulatedLeftTopImageOffset.y),
-        bottomRight = Point(
-            originalImageSize.width - accumulatedBottomRightImageOffset.x,
-            originalImageSize.height - accumulatedBottomRightImageOffset.y
-        )
-    )
 
 context (Scene)
 fun Offset.toSceneOffset(): SceneOffset {
@@ -162,11 +137,11 @@ fun Offset.toSceneOffset(): SceneOffset {
 }
 
 context (Scene)
-        @Suppress("NOTHING_TO_INLINE")
-        inline fun Point.toGlPoint(): GlPoint = GlPoint.fromPoint(this, imageSize)
+@Suppress("NOTHING_TO_INLINE")
+inline fun Point.toGlPoint(): GlPoint = GlPoint.fromPoint(this, imageSize)
 
 context (Scene)
-        private fun ScenePoint.toImagePoint(): Point {
+private fun ScenePoint.toImagePoint(): Point {
     return if (imageSize.isPortrait) {
         val viewport2WindowHeight = imageSize.height.toFloat() / windowSize.height
         // how many times image was stretched to fit the window height

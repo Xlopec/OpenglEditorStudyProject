@@ -2,12 +2,7 @@ package io.github.xlopec.opengl.edu
 
 import android.app.Activity
 import android.app.Application
-import io.github.xlopec.opengl.edu.model.AppInitializer
-import io.github.xlopec.opengl.edu.model.AppState
-import io.github.xlopec.opengl.edu.model.Command
-import io.github.xlopec.opengl.edu.model.Environment
-import io.github.xlopec.opengl.edu.model.Message
-import io.github.xlopec.opengl.edu.model.update
+import io.github.xlopec.opengl.edu.model.*
 import io.github.xlopec.tea.core.Component
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

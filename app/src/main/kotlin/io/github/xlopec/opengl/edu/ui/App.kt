@@ -4,38 +4,13 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.GetContent
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.keyframes
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.DrawerValue
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.Icon
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cached
 import androidx.compose.material.icons.filled.PermMedia
-import androidx.compose.material.rememberDrawerState
-import androidx.compose.material.rememberScaffoldState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -48,17 +23,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.xlopec.opengl.edu.MimeTypePng
 import io.github.xlopec.opengl.edu.R
-import io.github.xlopec.opengl.edu.model.AppState
-import io.github.xlopec.opengl.edu.model.Command
-import io.github.xlopec.opengl.edu.model.DoExportImage
-import io.github.xlopec.opengl.edu.model.Message
-import io.github.xlopec.opengl.edu.model.NotifyTransformationApplied
-import io.github.xlopec.opengl.edu.model.OnCropped
-import io.github.xlopec.opengl.edu.model.OnDataPrepared
-import io.github.xlopec.opengl.edu.model.OnImageExportException
-import io.github.xlopec.opengl.edu.model.OnImageExported
+import io.github.xlopec.opengl.edu.model.*
 import io.github.xlopec.opengl.edu.model.geometry.Size
-import io.github.xlopec.opengl.edu.model.transformation.Scene
 import io.github.xlopec.opengl.edu.saveBitmap
 import io.github.xlopec.opengl.edu.ui.gl.GLView
 import io.github.xlopec.opengl.edu.ui.gl.decodeImageSize
@@ -180,15 +146,6 @@ fun App(
                         }
                     )
 
-                    val cropRequested = snapshot.commands.any { cmd -> cmd.cropRequested }
-
-                    if (cropRequested) {
-                        LaunchedEffect(Unit) {
-                            glState.crop()
-                            handler(OnCropped)
-                        }
-                    }
-
                     LaunchedEffect(editor) {
                         glState.editor = editor
                     }
@@ -207,6 +164,7 @@ fun App(
                                 bitmap = glState.exportFrame()
                                 handler(
                                     OnImageExported(
+                                        filename = exportCommand.filename,
                                         path = context.saveBitmap(
                                             bitmap = bitmap,
                                             filename = exportCommand.filename,
@@ -264,6 +222,3 @@ private fun Modifier.animateRotationIfTrue(
         Modifier
     }
 }
-
-private val Command.cropRequested: Boolean
-    get() = this is NotifyTransformationApplied && which == Scene::class

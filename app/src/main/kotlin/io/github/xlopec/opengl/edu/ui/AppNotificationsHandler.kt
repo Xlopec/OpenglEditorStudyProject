@@ -10,11 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import io.github.xlopec.opengl.edu.MimeTypePng
 import io.github.xlopec.opengl.edu.R
-import io.github.xlopec.opengl.edu.model.AppState
-import io.github.xlopec.opengl.edu.model.Command
-import io.github.xlopec.opengl.edu.model.Message
-import io.github.xlopec.opengl.edu.model.NotifyException
-import io.github.xlopec.opengl.edu.model.NotifyImageExported
+import io.github.xlopec.opengl.edu.model.*
 import io.github.xlopec.tea.core.Snapshot
 
 @Composable
