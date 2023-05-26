@@ -15,36 +15,60 @@ inline val Rect.size: Size
     )
 
 context (Size)
+fun Rect.moveTopLeftCornerWithinBounds(
+    to: Point,
+): Rect {
+    val coercedX = to.x.coerceIn(0, bottomRight.x - Scene.MinSize)
+    val coercedY = to.y.coerceIn(0, bottomRight.y - Scene.MinSize)
+    return copy(topLeft = Point(x = coercedX, y = coercedY))
+}
+
+context (Size)
+fun Rect.moveBottomLeftCornerWithinBounds(
+    to: Point,
+): Rect {
+    val coercedX = to.x.coerceIn(0, bottomRight.x - Scene.MinSize)
+    val coercedY = to.y.coerceIn(topLeft.y + Scene.MinSize, height)
+    return copy(topLeft = Point(x = coercedX, y = topLeft.y), bottomRight = Point(x = bottomRight.x, y = coercedY))
+}
+
+context (Size)
+fun Rect.moveTopRightCornerWithinBounds(
+    to: Point,
+): Rect {
+    val coercedX = to.x.coerceIn(topLeft.x + Scene.MinSize, width)
+    val coercedY = to.y.coerceIn(0, bottomRight.y - Scene.MinSize)
+    return copy(topLeft = Point(x = topLeft.x, y = coercedY), bottomRight = Point(x = coercedX, y = bottomRight.y))
+}
+
+context (Size)
+fun Rect.moveBottomRightCornerWithinBounds(
+    to: Point,
+): Rect {
+    val coercedX = to.x.coerceIn(topLeft.x + Scene.MinSize, width)
+    val coercedY = to.y.coerceIn(topLeft.y + Scene.MinSize, height)
+    return copy(bottomRight = Point(x = coercedX, y = coercedY))
+}
+
+context (Size)
 fun Rect.moveRightEdgeWithinBounds(
     toX: Int,
-): Rect {
-    val coercedX = toX.coerceIn(topLeft.x + Scene.MinSize, width)
-    return copy(bottomRight = Point(x = coercedX, y = bottomRight.y))
-}
+): Rect = moveBottomRightCornerWithinBounds(to = Point(x = toX, y = bottomRight.y))
 
 context (Size)
 fun Rect.moveLeftEdgeWithinBounds(
     toX: Int,
-): Rect {
-    val coercedX = toX.coerceIn(0, bottomRight.x - Scene.MinSize)
-    return copy(topLeft = Point(x = coercedX, y = topLeft.y))
-}
+): Rect = moveTopLeftCornerWithinBounds(to = Point(x = toX, y = topLeft.y))
 
 context (Size)
 fun Rect.moveTopEdgeWithinBounds(
     toY: Int,
-): Rect {
-    val coercedY = toY.coerceIn(0, bottomRight.y - Scene.MinSize)
-    return copy(topLeft = Point(x = topLeft.x, y = coercedY))
-}
+): Rect = moveTopLeftCornerWithinBounds(to = Point(x = topLeft.x, y = toY))
 
 context (Size)
 fun Rect.moveBottomEdgeWithinBounds(
     toY: Int,
-): Rect {
-    val coercedY = toY.coerceIn(topLeft.y + Scene.MinSize, height)
-    return copy(bottomRight = Point(x = bottomRight.x, y = coercedY))
-}
+): Rect = moveBottomRightCornerWithinBounds(to = Point(x = bottomRight.x, y = toY))
 
 fun Rect.offsetTo(
     offset: Offset,
@@ -75,6 +99,26 @@ fun Rect.offsetToWithinBounds(
     return offsetTo(Offset(x, y))
 }
 
+fun Point.isOnTopLeftCornerOf(
+    rect: Rect,
+    tolerancePx: Int,
+): Boolean = abs(x - rect.topLeft.x) <= tolerancePx && abs(y - rect.topLeft.y) <= tolerancePx
+
+fun Point.isOnBottomLeftCornerOf(
+    rect: Rect,
+    tolerancePx: Int,
+): Boolean = abs(x - rect.topLeft.x) <= tolerancePx && abs(y - rect.bottomRight.y) <= tolerancePx
+
+fun Point.isOnTopRightCornerOf(
+    rect: Rect,
+    tolerancePx: Int,
+): Boolean = abs(x - rect.bottomRight.x) <= tolerancePx && abs(y - rect.topLeft.y) <= tolerancePx
+
+fun Point.isOnBottomRightCornerOf(
+    rect: Rect,
+    tolerancePx: Int,
+): Boolean = abs(x - rect.bottomRight.x) <= tolerancePx && abs(y - rect.bottomRight.y) <= tolerancePx
+
 fun Point.isOnRightEdgeOf(
     rect: Rect,
     tolerancePx: Int,
@@ -84,7 +128,6 @@ fun Point.isOnLeftEdgeOf(
     rect: Rect,
     tolerancePx: Int,
 ): Boolean = abs(x - rect.topLeft.x) <= tolerancePx && y in rect.topLeft.y..rect.bottomRight.y
-
 
 fun Point.isOnTopEdgeOf(
     rect: Rect,
