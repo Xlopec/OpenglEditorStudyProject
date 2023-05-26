@@ -84,6 +84,22 @@ class Scene(
         when (action) {
             MotionEvent.ACTION_MOVE -> {
                 when {
+                    isCropSelectionMode && userInput.isOnTopLeftCornerOf(selection, TolerancePx) -> {
+                        selection = selection.moveTopLeftCornerWithinBounds(userInput)
+                    }
+
+                    isCropSelectionMode && userInput.isOnBottomLeftCornerOf(selection, TolerancePx) -> {
+                        selection = selection.moveBottomLeftCornerWithinBounds(userInput)
+                    }
+
+                    isCropSelectionMode && userInput.isOnTopRightCornerOf(selection, TolerancePx) -> {
+                        selection = selection.moveTopRightCornerWithinBounds(userInput)
+                    }
+
+                    isCropSelectionMode && userInput.isOnBottomRightCornerOf(selection, TolerancePx) -> {
+                        selection = selection.moveBottomRightCornerWithinBounds(userInput)
+                    }
+
                     isCropSelectionMode && userInput.isOnRightEdgeOf(selection, TolerancePx) -> {
                         selection = selection.moveRightEdgeWithinBounds(userInput.x)
                     }
